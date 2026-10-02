@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop All | CityGirl Wardrobe</title>
+<meta name="description" content="Shop the full CityGirl Wardrobe collection — dresses, co-ord sets, tops, skirts and accessories.">
+<link rel="icon" href="assets/img/logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<noscript><style>[data-reveal]{opacity:1!important;transform:none!important;}</style></noscript>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-config.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div id="announcement-bar" class="announcement-bar"></div>
+<header class="site-header" id="site-header"></header>
+
+<main id="main">
+  <section class="page-hero">
+    <div class="container">
+      <div class="breadcrumb"><a href="index.html" style="color:#fff;">Home</a> / <span id="shop-crumb">Shop</span></div>
+      <h1 id="shop-title">Shop All</h1>
+      <p>Browse the full CityGirl Wardrobe collection and find your next favourite fit.</p>
+    </div>
+  </section>
+
+  <section style="padding-top:40px;">
+    <div class="container">
+      <div class="chip-row" id="category-chips"></div>
+      <div class="grid grid-4" id="shop-grid" style="margin-top:36px;"></div>
+      <p id="empty-state" class="text-muted center" style="display:none;padding:40px 0;">No pieces in this category yet — check back soon!</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<div id="newsletter-modal-root"></div>
+<div id="bag-drawer-root"></div>
+<div id="quickview-modal-root"></div>
+
+<button class="back-to-top" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script src="assets/js/store-data.js"></script>
+<script src="assets/js/render.js"></script>
+<script>
+  CGWRender.init('shop.html');
+  var content = CGWRender.content;
+
+  // Current view can be a garment category (?cat=) or a special filter
+  // (?filter=new | ?filter=bestsellers), or "All".
+  function getViewFromUrl() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('filter') === 'new') return { key: 'new', label: 'New In' };
+    if (params.get('filter') === 'bestsellers') return { key: 'bestsellers', label: 'Bestsellers' };
+    var cat = params.get('cat');
+    if (cat) return { key: cat, label: cat };
+    return { key: 'All', label: 'All' };
+  }
+
+  function urlFor(key) {
+    if (key === 'All') return 'shop.html';
+    if (key === 'new') return 'shop.html?filter=new';
+    if (key === 'bestsellers') return 'shop.html?filter=bestsellers';
+    return 'shop.html?cat=' + encodeURIComponent(key);
+  }
+
+  function productsFor(key) {
+    if (key === 'All') return content.products;
+    if (key === 'new') return content.products.filter(function (p) { return p.tag === 'New'; });
+    if (key === 'bestsellers') return content.products.filter(CGWRender.isBestseller);
+    return content.products.filter(function (p) { return p.category === key; });
+  }
+
+  function renderChips(activeKey) {
+    var chips = [{ key: 'All', label: 'All' }, { key: 'new', label: 'New In' }]
+      .concat(content.categories.map(function (c) { return { key: c, label: c }; }))
+      .concat([{ key: 'bestsellers', label: 'Bestsellers' }]);
+    document.getElementById('category-chips').innerHTML = chips.map(function (c) {
+      return '<a href="' + urlFor(c.key) + '" class="chip' + (c.key === activeKey ? ' is-active' : '') + '" data-key="' + CGWRender.escapeHtml(c.key) + '">' + CGWRender.escapeHtml(c.label) + '</a>';
+    }).join('');
+  }
+
+  function renderGrid(key) {
+    var products = productsFor(key);
+    var grid = document.getElementById('shop-grid');
+    var empty = document.getElementById('empty-state');
+    grid.innerHTML = products.map(CGWRender.productCardHtml).join('');
+    empty.style.display = products.length ? 'none' : 'block';
+    CGWRender.wireReveal();
+  }
+
+  function setHeading(view) {
+    var h = document.getElementById('shop-title');
+    var crumb = document.getElementById('shop-crumb');
+    if (h) h.textContent = view.key === 'All' ? 'Shop All' : view.label;
+    if (crumb) crumb.textContent = view.key === 'All' ? 'Shop' : view.label;
+  }
+
+  function renderView() {
+    var view = getViewFromUrl();
+    setHeading(view);
+    renderChips(view.key);
+    renderGrid(view.key);
+  }
+
+  // Pull live products from Supabase when available; fall back to bundled data.
+  if (window.CGWDB) {
+    CGWDB.products().then(function (p) { if (p && p.length) content.products = p; })
+      .catch(function (e) { console.warn('CityGirl: live products unavailable, using bundled data', e); })
+      .then(renderView);
+  } else { renderView(); }
+
+  document.getElementById('category-chips').addEventListener('click', function (e) {
+    var chip = e.target.closest('[data-key]');
+    if (!chip) return;
+    e.preventDefault();
+    var key = chip.getAttribute('data-key');
+    history.pushState({}, '', urlFor(key));
+    setHeading(getViewFromUrl());
+    renderChips(key);
+    renderGrid(key);
+  });
+</script>
+</body>
+</html>

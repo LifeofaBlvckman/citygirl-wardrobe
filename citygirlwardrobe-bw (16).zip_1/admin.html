@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store Admin | CityGirl Wardrobe</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="assets/img/logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-config.js"></script>
+<style>
+  .pm-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  .pm-card { border: 1px solid var(--brand-border); border-radius: 14px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+  .pm-card img { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: var(--brand-bg-alt); }
+  .pm-card .pm-body { padding: 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .pm-card .pm-name { font-weight: 700; font-size: 0.95rem; }
+  .pm-card .pm-price { color: var(--brand-lilac); font-size: 0.9rem; }
+  .pm-card .pm-tag { font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: #0b0b0b; }
+  .pm-card .pm-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .pm-card .pm-actions button { flex: 1; }
+  .pm-imgrow { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+  .pm-preview { width: 90px; height: 120px; object-fit: cover; border-radius: 10px; border: 1px solid var(--brand-border); background: var(--brand-bg-alt); }
+  .btn-danger { background: #fff; color: var(--signal); border: 1px solid var(--signal); }
+  .btn-danger:hover { background: var(--signal); color: #fff; }
+  .sales-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+  .stat-card { border: 1px solid var(--brand-border); border-radius: 14px; padding: 18px; background: #fff; }
+  .stat-card .stat-value { font-size: 1.7rem; font-weight: 800; font-family: var(--font-heading); line-height: 1.1; }
+  .stat-card .stat-label { color: var(--brand-lilac); font-size: 0.82rem; margin-top: 4px; }
+  .orders-table { width: 100%; border-collapse: collapse; min-width: 620px; }
+  .orders-table th, .orders-table td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--brand-border); font-size: 0.88rem; vertical-align: middle; }
+  .orders-table th { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand-lilac); }
+  .orders-table select { padding: 5px 8px; font-size: 0.82rem; }
+  .order-status { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .gallery-item { position: relative; }
+  .gallery-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; background: var(--brand-bg-alt); }
+  .gallery-item .gal-del { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 50%; }
+</style>
+</head>
+<body class="admin-body">
+
+<!-- LOGIN GATE (email + password) -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div id="login-logo" style="margin:0 auto 18px;text-align:center;"></div>
+    <h1 style="font-size:1.4rem;">Store Admin</h1>
+    <p class="text-muted">Log in to manage CityGirl Wardrobe.</p>
+    <form id="login-form">
+      <div class="field"><label for="login-email">Email</label><input type="email" id="login-email" required autocomplete="username"></div>
+      <div class="field"><label for="login-password">Password</label><input type="password" id="login-password" required autocomplete="current-password"></div>
+      <button type="submit" class="btn btn-primary btn-block">Log In</button>
+    </form>
+    <p id="login-error" class="login-error" hidden>Login failed — check your email and password.</p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="dashboard" hidden>
+  <header class="admin-header">
+    <div class="admin-header-inner">
+      <div class="brand-lockup" id="admin-logo-slot"></div>
+      <div class="admin-header-actions">
+        <a href="index.html" target="_blank" rel="noopener" class="btn btn-outline btn-sm">View Live Site ↗</a>
+        <button id="logout-btn" class="btn-icon" aria-label="Log out" title="Log out">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+    <nav class="admin-tabs" id="admin-tabs" aria-label="Admin sections">
+      <button data-tab="products" class="admin-tab is-active">Products</button>
+      <button data-tab="sales" class="admin-tab">Sales</button>
+      <button data-tab="gallery" class="admin-tab">Gallery</button>
+      <button data-tab="settings" class="admin-tab">Store Settings</button>
+      <button data-tab="newsletter" class="admin-tab">Newsletter Popup</button>
+      <button data-tab="about" class="admin-tab">About Page</button>
+      <button data-tab="subscribers" class="admin-tab">Subscribers</button>
+    </nav>
+  </header>
+
+  <main class="admin-main">
+    <div class="container">
+
+      <!-- PRODUCTS (live, database-backed) -->
+      <section class="admin-panel is-active" data-panel="products">
+        <div class="admin-panel-head">
+          <div>
+            <h2>Products</h2>
+            <p class="text-muted">Add gowns and upload photos. Saved to your database — <b>everyone</b> who opens the site sees them.</p>
+          </div>
+          <button id="pm-add" class="btn btn-primary btn-sm">+ Add product</button>
+        </div>
+
+        <form id="pm-form" class="admin-card" hidden>
+          <h3 id="pm-form-title" style="margin-top:0;">Add product</h3>
+          <div class="pm-imgrow">
+            <img id="pm-img-preview" class="pm-preview" alt="" src="assets/img/product-fallback.jpg">
+            <div>
+              <label class="upload-btn" style="cursor:pointer;">&#8593; Upload photo<input type="file" id="pm-img-file" accept="image/*" hidden></label>
+              <p id="pm-img-status" class="text-muted" style="font-size:0.8rem;margin:8px 0 0;">JPG or PNG. Shown to everyone.</p>
+            </div>
+          </div>
+          <div class="grid grid-2">
+            <div class="field"><label>Name</label><input type="text" id="pm-name" required></div>
+            <div class="field"><label>Price (&#8358;)</label><input type="number" id="pm-price" min="0" required></div>
+            <div class="field"><label>Category</label>
+              <select id="pm-category"><option>Dresses</option><option>Sets</option><option>Tops</option><option>Bottoms</option><option>Accessories</option></select>
+            </div>
+            <div class="field"><label>Where it shows</label>
+              <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:10px;">
+                <label class="toggle-row"><input type="checkbox" id="pm-newin"><span>New In</span></label>
+                <label class="toggle-row"><input type="checkbox" id="pm-bestseller"><span>Bestseller</span></label>
+                <label class="toggle-row"><input type="checkbox" id="pm-soldout"><span>Sold Out</span></label>
+              </div>
+            </div>
+            <div class="field"><label>Sizes (comma separated)</label><input type="text" id="pm-sizes" placeholder="S, M, L, XL"></div>
+            <div class="field"><label>Fabric / material</label><input type="text" id="pm-fabric"></div>
+            <div class="field"><label>Stretch</label><input type="text" id="pm-stretch" placeholder="e.g. Slight stretch"></div>
+            <div class="field"><label>Fit</label><input type="text" id="pm-fit" placeholder="e.g. True to size"></div>
+            <div class="field"><label>Care</label><input type="text" id="pm-care" placeholder="e.g. Dry clean only"></div>
+            <div class="field"><label>Model info</label><input type="text" id="pm-modelinfo" placeholder="e.g. Model is 5'9&quot; wearing M"></div>
+            <div class="field"><label>Model is wearing (size)</label><input type="text" id="pm-modelsize" placeholder="M"></div>
+          </div>
+          <div class="field"><label>Description</label><textarea id="pm-description" rows="3"></textarea></div>
+          <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;">
+            <button type="submit" class="btn btn-primary">Save product</button>
+            <button type="button" id="pm-cancel" class="btn btn-outline">Cancel</button>
+          </div>
+        </form>
+
+        <div id="pm-empty" class="text-muted" hidden style="padding:24px 0;">No products yet. Click &ldquo;Add product&rdquo; to create your first one.</div>
+        <div id="pm-list" class="pm-list"></div>
+      </section>
+
+      <!-- STORE SETTINGS -->
+      <section class="admin-panel" data-panel="settings">
+        <h2>Store Settings</h2>
+        <p class="text-muted">The core details used across every page of your site.</p>
+        <div class="admin-card">
+          <div class="grid grid-2">
+            <div class="field"><label for="f-brand-name">Store name</label><input type="text" id="f-brand-name"></div>
+            <div class="field"><label for="f-tagline">Tagline</label><input type="text" id="f-tagline"></div>
+            <div class="field"><label for="f-whatsapp">WhatsApp number (with country code, no + or spaces)</label><input type="text" id="f-whatsapp" placeholder="2348012345678"></div>
+            <div class="field"><label for="f-instagram">Instagram handle (no @)</label><input type="text" id="f-instagram"></div>
+            <div class="field"><label for="f-email">Contact email</label><input type="email" id="f-email"></div>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <h3>Colour Theme</h3>
+          <p class="text-muted">Pick the vibe — every page updates to match.</p>
+          <div class="theme-grid" id="theme-grid"></div>
+          <label class="toggle-row" style="margin-top:18px;"><input type="checkbox" id="f-use-custom-accent"><span>Override with a custom accent colour instead</span></label>
+          <div class="field" style="max-width:240px;margin-top:12px;">
+            <input type="color" id="f-custom-accent" style="height:46px;padding:4px;" disabled>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <h3>Announcement Bar</h3>
+          <label class="toggle-row"><input type="checkbox" id="f-announcement-enabled"><span>Show announcement bar</span></label>
+          <div class="field" style="margin-top:12px;"><label for="f-announcement-text">Announcement text</label><input type="text" id="f-announcement-text"></div>
+        </div>
+      </section>
+
+      <!-- SALES DASHBOARD -->
+      <section class="admin-panel" data-panel="sales">
+        <div class="admin-panel-head">
+          <div>
+            <h2>Sales Dashboard</h2>
+            <p class="text-muted">Orders placed on your website.</p>
+          </div>
+          <button id="sales-refresh" class="btn btn-outline btn-sm">Refresh</button>
+        </div>
+        <div class="sales-stats" id="sales-stats"></div>
+        <h3 style="margin:26px 0 12px;">Recent orders</h3>
+        <div class="admin-card" style="padding:0;overflow-x:auto;">
+          <div id="sales-orders"></div>
+        </div>
+      </section>
+
+      <!-- GALLERY -->
+      <section class="admin-panel" data-panel="gallery">
+        <div class="admin-panel-head">
+          <div>
+            <h2>Follow the CityGirl Life</h2>
+            <p class="text-muted">The photo strip near the bottom of the homepage. Upload your own looks — they show for everyone.</p>
+          </div>
+          <label class="btn btn-primary btn-sm" style="cursor:pointer;">&#8593; Upload photo<input type="file" id="gallery-file" accept="image/*" hidden></label>
+        </div>
+        <p id="gallery-status" class="text-muted" hidden></p>
+        <div id="gallery-empty" class="text-muted" hidden style="padding:20px 0;">No photos yet — upload some looks to fill the strip. (Until then the homepage shows sample images.)</div>
+        <div id="gallery-grid" class="pm-list"></div>
+      </section>
+
+      <!-- NEWSLETTER -->
+      <section class="admin-panel" data-panel="newsletter">
+        <h2>Newsletter Popup</h2>
+        <p class="text-muted">Shown once per visitor session when the site is opened.</p>
+        <div class="admin-card">
+          <label class="toggle-row"><input type="checkbox" id="f-newsletter-enabled"><span>Show newsletter popup</span></label>
+          <div class="grid grid-2" style="margin-top:16px;">
+            <div class="field"><label for="f-newsletter-heading">Heading</label><input type="text" id="f-newsletter-heading"></div>
+            <div class="field"><label for="f-newsletter-discount">Discount badge text</label><input type="text" id="f-newsletter-discount"></div>
+          </div>
+          <div class="field"><label for="f-newsletter-subtext">Subtext</label><textarea id="f-newsletter-subtext"></textarea></div>
+          <div class="field" style="max-width:220px;"><label for="f-newsletter-delay">Delay before showing (seconds)</label><input type="number" id="f-newsletter-delay" min="0" max="30"></div>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section class="admin-panel" data-panel="about">
+        <h2>About Page</h2>
+        <div class="admin-card">
+          <div class="field"><label for="f-about-heading">Heading</label><input type="text" id="f-about-heading"></div>
+          <div class="field"><label for="f-about-body">Story (leave a blank line between paragraphs)</label><textarea id="f-about-body" style="min-height:220px;"></textarea></div>
+          <div class="field"><label for="f-footer-about">Footer description</label><textarea id="f-footer-about"></textarea></div>
+        </div>
+      </section>
+
+      <!-- SUBSCRIBERS -->
+      <section class="admin-panel" data-panel="subscribers">
+        <div class="admin-panel-head">
+          <div>
+            <h2>Newsletter Subscribers</h2>
+            <p class="text-muted"><span id="subscriber-count">0</span> people have joined so far.</p>
+          </div>
+          <button id="export-subscribers-btn" class="btn btn-outline btn-sm">Export as CSV</button>
+        </div>
+        <div class="admin-card">
+          <ul id="subscribers-list" class="subscriber-list"></ul>
+          <p id="subscribers-empty" class="text-muted" hidden>No subscribers yet — they'll show up here once people join through the newsletter popup.</p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="admin-save-bar">
+    <div class="container admin-save-bar-inner">
+      <span id="save-status" class="text-muted">No unsaved changes</span>
+      <div style="display:flex;gap:10px;">
+        <button id="reset-btn" class="btn btn-outline btn-sm">Reset to Sample Data</button>
+        <button id="save-btn" class="btn btn-primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="assets/js/store-data.js"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>

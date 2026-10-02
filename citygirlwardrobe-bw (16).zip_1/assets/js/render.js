@@ -1,0 +1,528 @@
+/**
+ * CityGirl Wardrobe — renders header/footer/announcement/modals/products
+ * from the shared content object (see store-data.js) into every storefront
+ * page, and wires up the interactive bits (nav, search, bag drawer, quick
+ * view, newsletter popup, floating WhatsApp, reveal animation).
+ */
+(function () {
+  'use strict';
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var content = window.CGW.getContent();
+  window.CGW.applyTheme(content);
+
+  var IMG_FALLBACK = 'assets/img/product-fallback.jpg';
+  var ONERR = ' onerror="this.onerror=null;this.src=\'' + IMG_FALLBACK + '\'"';
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function waLink(text) {
+    return 'https://wa.me/' + encodeURIComponent(content.meta.whatsapp) + (text ? '?text=' + encodeURIComponent(text) : '');
+  }
+  function productById(id) { return content.products.find(function (p) { return p.id === id; }); }
+  function isBestseller(p) { return p.bestseller === true || p.tag === 'Bestseller'; }
+  function starsHtml(rating, reviews) {
+    var full = Math.round(rating || 5);
+    var s = '';
+    for (var i = 0; i < 5; i++) s += '<span class="star' + (i < full ? '' : ' empty') + '">★</span>';
+    return '<span class="stars" aria-label="' + (rating || 5) + ' out of 5">' + s + '</span>' +
+      (reviews ? '<span class="rating-count">' + (rating ? rating.toFixed(1) + ' · ' : '') + reviews + ' reviews</span>' : '');
+  }
+
+  function logoBadgeHtml(variant) {
+    var cls = variant === 'sm' ? 'logo-badge badge-sm' : 'logo-badge badge-full';
+    return '<img class="' + cls + '" src="assets/img/logo.png" alt="CityGirl Wardrobe" width="' +
+      (variant === 'sm' ? 46 : 96) + '" height="' + (variant === 'sm' ? 46 : 96) + '">';
+  }
+
+  function renderAnnouncement() {
+    var el = document.getElementById('announcement-bar');
+    if (!el) return;
+    if (content.announcement.enabled && content.announcement.text) {
+      el.innerHTML = escapeHtml(content.announcement.text);
+      el.style.display = '';
+    } else { el.style.display = 'none'; }
+  }
+
+  function renderHeader(activePage) {
+    var el = document.getElementById('site-header');
+    if (!el) return;
+    // Shop-first navigation: New In + garment categories + Bestsellers, then About/Contact.
+    var links = [{ href: 'shop.html?filter=new', label: 'New In' }]
+      .concat(content.categories.map(function (c) { return { href: 'shop.html?cat=' + encodeURIComponent(c), label: c }; }))
+      .concat([
+        { href: 'shop.html?filter=bestsellers', label: 'Bestsellers' },
+        { href: 'about.html', label: 'About' },
+        { href: 'contact.html', label: 'Contact' }
+      ]);
+    var linksHtml = links.map(function (l) {
+      return '<a href="' + l.href + '"' + (l.href === activePage ? ' aria-current="page"' : '') + '>' + escapeHtml(l.label) + '</a>';
+    }).join('');
+
+    el.innerHTML =
+      '<div class="container nav">' +
+        '<a href="index.html" class="brand-lockup">' + logoBadgeHtml('sm') +
+          '<span class="brand-name">CITY<b class="bn-accent">GIRL</b></span>' +
+        '</a>' +
+        '<nav class="nav-links" id="nav-links" aria-label="Primary">' + linksHtml + '</nav>' +
+        '<div class="nav-actions">' +
+          '<button class="btn-icon" id="search-open-btn" aria-label="Search">' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>' +
+          '</button>' +
+          '<button class="btn-icon bag-btn" id="bag-open-btn" aria-label="Open bag">' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>' +
+            '<span class="bag-count" id="bag-count" hidden>0</span>' +
+          '</button>' +
+          '<button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Toggle menu"><span></span></button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function renderFooter() {
+    var el = document.getElementById('site-footer');
+    if (!el) return;
+    var catLinks = content.categories.map(function (c) {
+      return '<li><a href="shop.html?cat=' + encodeURIComponent(c) + '">' + escapeHtml(c) + '</a></li>';
+    }).join('');
+    el.innerHTML =
+      '<div class="container footer-grid">' +
+        '<div>' +
+          '<a href="index.html" class="brand-lockup" style="margin-bottom:14px;display:inline-flex;">' + logoBadgeHtml('sm') +
+            '<span class="brand-name" style="color:#fff;">CITY<b class="bn-accent">GIRL</b></span>' +
+          '</a>' +
+          '<p>' + escapeHtml(content.footer.about) + '</p>' +
+          '<div class="social-row">' +
+            '<a href="https://instagram.com/' + encodeURIComponent(content.meta.instagram) + '" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1"/></svg></a>' +
+            '<a href="' + waLink('') + '" aria-label="WhatsApp" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm5.6 14.2c-.2.6-1.4 1.2-1.9 1.3-.5.1-1.1.2-3.5-.8-2.9-1.2-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5.2.6.7 1.9.8 2 .1.2.1.4 0 .6-.1.2-.2.4-.4.6l-.5.6c-.2.2-.3.4-.1.7.2.3.9 1.4 1.9 2.3 1.3 1.2 2.4 1.5 2.7 1.7.3.2.5.1.7-.1l.9-1c.2-.3.4-.2.7-.1l1.8.9c.2.1.4.2.5.3.1.2.1.9-.1 1.5Z"/></svg></a>' +
+          '</div>' +
+        '</div>' +
+        '<div><h4>Shop</h4><ul class="footer-links">' +
+          '<li><a href="shop.html?filter=new">New In</a></li>' + catLinks +
+          '<li><a href="shop.html?filter=bestsellers">Bestsellers</a></li>' +
+        '</ul></div>' +
+        '<div><h4>Quick Links</h4><ul class="footer-links">' +
+          '<li><a href="index.html">Home</a></li><li><a href="about.html">About Us</a></li>' +
+          '<li><a href="contact.html">Contact</a></li>' +
+        '</ul></div>' +
+        '<div><h4>Get In Touch</h4><ul class="footer-links">' +
+          '<li><a href="mailto:' + escapeHtml(content.meta.email) + '">' + escapeHtml(content.meta.email) + '</a></li>' +
+          '<li><a href="' + waLink('') + '" target="_blank" rel="noopener">WhatsApp Us</a></li>' +
+          '<li><a href="https://instagram.com/' + encodeURIComponent(content.meta.instagram) + '" target="_blank" rel="noopener">@' + escapeHtml(content.meta.instagram) + '</a></li>' +
+        '</ul></div>' +
+      '</div>' +
+      '<div class="container footer-bottom">' +
+        '<span>© <span data-year></span> ' + escapeHtml(content.meta.brandName) + '. All rights reserved.</span>' +
+        '<span>Made with 🖤 in Lagos</span>' +
+      '</div>';
+    var y = el.querySelector('[data-year]');
+    if (y) y.textContent = new Date().getFullYear();
+  }
+
+  function productCardHtml(p) {
+    return (
+      '<div class="product-card" data-reveal>' +
+        '<div class="product-media">' +
+          (p.tag ? '<span class="product-tag" data-tag="' + escapeHtml(p.tag) + '">' + escapeHtml(p.tag) + '</span>' : '') +
+          '<img src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name) + '" data-quickview="' + p.id + '"' + ONERR + '>' +
+          '<button class="quickview-btn" data-quickview="' + p.id + '">Quick view</button>' +
+        '</div>' +
+        '<div class="product-body">' +
+          '<span class="product-cat">' + escapeHtml(p.category) + '</span>' +
+          '<h3 data-quickview="' + p.id + '">' + escapeHtml(p.name) + '</h3>' +
+          (p.rating ? '<div class="card-rating">' + starsHtml(p.rating, 0) + '<span class="rating-count">(' + (p.reviews || 0) + ')</span></div>' : '') +
+          '<span class="product-price">' + window.CGW.formatPrice(p.price) + '</span>' +
+          '<button class="btn btn-primary btn-sm" data-add-to-bag="' + p.id + '"' + (p.tag === 'Sold Out' ? ' disabled style="opacity:.5;cursor:not-allowed;"' : '') + '>' +
+            (p.tag === 'Sold Out' ? 'Sold Out' : 'Add to Bag') +
+          '</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderNewsletterModal() {
+    var root = document.getElementById('newsletter-modal-root');
+    if (!root || !content.newsletter.enabled) return;
+    root.innerHTML =
+      '<div class="modal-overlay" id="newsletter-overlay">' +
+        '<div class="newsletter-modal" id="newsletter-modal">' +
+          '<button class="modal-close" id="newsletter-close" aria-label="Close">&times;</button>' +
+          logoBadgeHtml() +
+          '<h2 style="margin-top:14px;">' + escapeHtml(content.newsletter.heading) + '</h2>' +
+          '<p class="text-muted">' + escapeHtml(content.newsletter.subtext) + '</p>' +
+          '<span class="discount-pill">' + escapeHtml(content.newsletter.discountText) + '</span>' +
+          '<form id="newsletter-form">' +
+            '<input type="email" required placeholder="Enter your email">' +
+            '<button type="submit" class="btn btn-primary btn-block">Unlock My Discount</button>' +
+          '</form>' +
+          '<p class="modal-note">No spam, ever — just cute new drops.</p>' +
+          '<p class="modal-success">Yay, you\'re in! Check your inbox for your code.</p>' +
+        '</div>' +
+      '</div>';
+
+    var overlay = document.getElementById('newsletter-overlay');
+    var modal = document.getElementById('newsletter-modal');
+    function openModal() { overlay.classList.add('is-open'); }
+    function closeModal() { overlay.classList.remove('is-open'); sessionStorage.setItem('cgw_newsletter_closed', '1'); }
+    var alreadySubscribed = localStorage.getItem('cgw_subscribed') === '1';
+    var closedThisSession = sessionStorage.getItem('cgw_newsletter_closed') === '1';
+    if (!alreadySubscribed && !closedThisSession) setTimeout(openModal, (content.newsletter.delaySeconds || 2) * 1000);
+    document.getElementById('newsletter-close').addEventListener('click', closeModal);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+    document.getElementById('newsletter-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      window.CGW.addSubscriber(e.target.querySelector('input[type="email"]').value);
+      localStorage.setItem('cgw_subscribed', '1');
+      modal.classList.add('is-success');
+      setTimeout(closeModal, 2200);
+    });
+  }
+
+  function renderBagDrawer() {
+    var root = document.getElementById('bag-drawer-root');
+    if (!root) return;
+    root.innerHTML =
+      '<div class="bag-drawer-overlay" id="bag-overlay">' +
+        '<div class="bag-drawer">' +
+          '<div class="bag-header"><h3 style="margin:0;">Your Bag</h3><button class="btn-icon" id="bag-close-btn" aria-label="Close bag">&times;</button></div>' +
+          '<div class="bag-items" id="bag-items"></div>' +
+          '<div class="bag-footer" id="bag-footer"></div>' +
+        '</div>' +
+      '</div>';
+    var overlay = document.getElementById('bag-overlay');
+    document.getElementById('bag-close-btn').addEventListener('click', closeBag);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeBag(); });
+    function openBag() { renderBagContents(); overlay.classList.add('is-open'); }
+    function closeBag() { overlay.classList.remove('is-open'); }
+    window.CGW.openBag = openBag;
+    var openBtn = document.getElementById('bag-open-btn');
+    if (openBtn) openBtn.addEventListener('click', openBag);
+  }
+
+  function renderBagContents() {
+    var bag = window.CGW.getBag();
+    var itemsEl = document.getElementById('bag-items');
+    var footerEl = document.getElementById('bag-footer');
+    if (!itemsEl) return;
+
+    var lineItems = bag.map(function (entry) {
+      var product = productById(entry.id);
+      return product ? { product: product, size: entry.size, qty: entry.qty } : null;
+    }).filter(Boolean);
+
+    if (!lineItems.length) {
+      itemsEl.innerHTML = '<div class="bag-empty">Your bag is empty.<br>Let\'s find you something cute.</div>';
+      footerEl.innerHTML = '';
+      updateBagCount();
+      return;
+    }
+
+    itemsEl.innerHTML = lineItems.map(function (li) {
+      return (
+        '<div class="bag-item">' +
+          '<img src="' + escapeHtml(li.product.image) + '" alt=""' + ONERR + '>' +
+          '<div class="bag-item-info">' +
+            '<h4>' + escapeHtml(li.product.name) + '</h4>' +
+            '<span class="text-muted">' + window.CGW.formatPrice(li.product.price) + (li.size && li.size !== 'One Size' ? ' · Size ' + escapeHtml(li.size) : '') + '</span>' +
+            '<div class="bag-qty">' +
+              '<button data-qty-id="' + li.product.id + '" data-qty-size="' + escapeHtml(li.size) + '" data-delta="-1" aria-label="Decrease quantity">−</button>' +
+              '<span>' + li.qty + '</span>' +
+              '<button data-qty-id="' + li.product.id + '" data-qty-size="' + escapeHtml(li.size) + '" data-delta="1" aria-label="Increase quantity">+</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    var subtotal = lineItems.reduce(function (sum, li) { return sum + li.product.price * li.qty; }, 0);
+    var waMessage = 'Hi ' + content.meta.brandName + '! I\'d like to order:\n' +
+      lineItems.map(function (li) { return '- ' + li.product.name + (li.size && li.size !== 'One Size' ? ' (Size ' + li.size + ')' : '') + ' x' + li.qty + ' (' + window.CGW.formatPrice(li.product.price * li.qty) + ')'; }).join('\n') +
+      '\n\nTotal: ' + window.CGW.formatPrice(subtotal);
+
+    footerEl.innerHTML =
+      '<div class="bag-subtotal"><span>Subtotal</span><span>' + window.CGW.formatPrice(subtotal) + '</span></div>' +
+      '<a href="checkout.html" class="btn btn-primary btn-block">Proceed to Checkout</a>' +
+      '<a href="' + waLink(waMessage) + '" target="_blank" rel="noopener" class="bag-secondary">Or order on WhatsApp</a>' +
+      '<p class="text-muted" style="font-size:0.76rem;margin:12px 0 0;text-align:center;">Delivery is calculated at checkout.</p>';
+
+    itemsEl.querySelectorAll('[data-qty-id]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-qty-id');
+        var size = btn.getAttribute('data-qty-size');
+        var delta = parseInt(btn.getAttribute('data-delta'), 10);
+        var entry = window.CGW.getBag().find(function (i) { return i.id === id && i.size === size; });
+        window.CGW.updateBagQty(id, size, (entry ? entry.qty : 0) + delta);
+        renderBagContents();
+      });
+    });
+    updateBagCount();
+  }
+
+  function updateBagCount() {
+    var count = window.CGW.getBag().reduce(function (sum, i) { return sum + i.qty; }, 0);
+    var el = document.getElementById('bag-count');
+    if (!el) return;
+    el.textContent = count;
+    el.hidden = count === 0;
+  }
+
+  // ---------- Rich product quick view ----------
+  function renderQuickView() {
+    var root = document.getElementById('quickview-modal-root');
+    if (!root) return;
+    root.innerHTML = '<div class="modal-overlay" id="qv-overlay"></div>';
+    var overlay = document.getElementById('qv-overlay');
+
+    function close() { overlay.classList.remove('is-open'); }
+
+    document.addEventListener('click', function (e) {
+      var trigger = e.target.closest('[data-quickview]');
+      if (!trigger) return;
+      var product = productById(trigger.getAttribute('data-quickview'));
+      if (!product) return;
+      openFor(product);
+    });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+
+    function openFor(product) {
+      var imgs = (product.images && product.images.length ? product.images : [product.image]);
+      var sizes = product.sizes && product.sizes.length ? product.sizes : ['One Size'];
+      var selectedSize = sizes[0];
+
+      var thumbs = imgs.map(function (src, i) {
+        return '<button class="qv-thumb' + (i === 0 ? ' is-active' : '') + '" data-img="' + escapeHtml(src) + '" aria-label="View photo ' + (i + 1) + '">' +
+          '<img src="' + escapeHtml(src) + '" alt=""' + ONERR + '></button>';
+      }).join('');
+
+      var sizeBtns = sizes.map(function (s, i) {
+        return '<button class="size-btn' + (i === 0 ? ' is-active' : '') + '" data-size="' + escapeHtml(s) + '">' + escapeHtml(s) + '</button>';
+      }).join('');
+
+      var specs = '';
+      if (product.fabric) specs += '<li><b>Fabric</b><span>' + escapeHtml(product.fabric) + '</span></li>';
+      if (product.stretch) specs += '<li><b>Stretch</b><span>' + escapeHtml(product.stretch) + '</span></li>';
+      if (product.fit) specs += '<li><b>Fit</b><span>' + escapeHtml(product.fit) + '</span></li>';
+      if (product.care) specs += '<li><b>Care</b><span>' + escapeHtml(product.care) + '</span></li>';
+      specs += '<li><b>Delivery</b><span>Lagos 1–3 days · worldwide shipping · free in Lagos over ₦50,000</span></li>';
+
+      var stylistMsg = 'Hi CityGirl! I need help with sizing for the ' + product.name + '.';
+
+      overlay.innerHTML =
+        '<div class="newsletter-modal quickview-modal">' +
+          '<button class="modal-close" id="qv-close" aria-label="Close">&times;</button>' +
+          '<div class="quickview-grid">' +
+            '<div class="qv-gallery">' +
+              '<div class="qv-main"><img id="qv-main-img" src="' + escapeHtml(imgs[0]) + '" alt="' + escapeHtml(product.name) + '"' + ONERR + '></div>' +
+              (imgs.length > 1 ? '<div class="qv-thumbs">' + thumbs + '</div>' : '') +
+            '</div>' +
+            '<div class="quickview-body">' +
+              (product.tag ? '<span class="product-tag" data-tag="' + escapeHtml(product.tag) + '" style="position:static;display:inline-block;margin-bottom:10px;">' + escapeHtml(product.tag) + '</span>' : '') +
+              '<h2>' + escapeHtml(product.name) + '</h2>' +
+              (product.rating ? '<div class="qv-rating">' + starsHtml(product.rating, product.reviews) + '</div>' : '') +
+              '<span class="product-price">' + window.CGW.formatPrice(product.price) + '</span>' +
+              '<p class="text-muted" style="margin-top:12px;">' + escapeHtml(product.description) + '</p>' +
+              '<div class="qv-size-block">' +
+                '<div class="qv-size-head"><span class="qv-label">Select size</span>' + (product.fit ? '<span class="qv-fit">' + escapeHtml(product.fit) + '</span>' : '') + '</div>' +
+                '<div class="size-row" id="qv-sizes">' + sizeBtns + '</div>' +
+              '</div>' +
+              (product.modelSize ? '<p class="qv-model">MODEL IS WEARING: <b>' + escapeHtml(product.modelSize) + '</b>' + (product.modelInfo ? ' — ' + escapeHtml(product.modelInfo) : '') + '</p>' : (product.modelInfo ? '<p class="qv-model">' + escapeHtml(product.modelInfo) + '</p>' : '')) +
+              '<div class="qv-actions">' +
+                '<button class="btn btn-primary btn-block" id="qv-add"' + (product.tag === 'Sold Out' ? ' disabled style="opacity:.5;cursor:not-allowed;"' : '') + '>' + (product.tag === 'Sold Out' ? 'Sold Out' : 'Add to Bag') + '</button>' +
+                (product.tag === 'Sold Out' ? '' : '<button class="btn btn-outline btn-block" id="qv-buy">Buy Now</button>') +
+              '</div>' +
+              '<a class="qv-stylist" href="' + waLink(stylistMsg) + '" target="_blank" rel="noopener">Not sure what size to get? Chat with a CityGirl stylist →</a>' +
+              '<ul class="qv-specs">' + specs + '</ul>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      overlay.classList.add('is-open');
+      document.getElementById('qv-close').addEventListener('click', close);
+
+      // Gallery thumbnails
+      overlay.querySelectorAll('.qv-thumb').forEach(function (t) {
+        t.addEventListener('click', function () {
+          document.getElementById('qv-main-img').src = t.getAttribute('data-img');
+          overlay.querySelectorAll('.qv-thumb').forEach(function (x) { x.classList.remove('is-active'); });
+          t.classList.add('is-active');
+        });
+      });
+      // Size selection
+      overlay.querySelectorAll('.size-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          selectedSize = b.getAttribute('data-size');
+          overlay.querySelectorAll('.size-btn').forEach(function (x) { x.classList.remove('is-active'); });
+          b.classList.add('is-active');
+        });
+      });
+      // Add to bag / Buy now
+      var addBtn = document.getElementById('qv-add');
+      if (addBtn && product.tag !== 'Sold Out') {
+        addBtn.addEventListener('click', function () {
+          window.CGW.addToBag(product.id, selectedSize);
+          updateBagCount();
+          addBtn.textContent = 'Added ✓';
+          setTimeout(function () { addBtn.textContent = 'Add to Bag'; }, 1200);
+          if (window.CGW.openBag) window.CGW.openBag();
+        });
+      }
+      var buyBtn = document.getElementById('qv-buy');
+      if (buyBtn) buyBtn.addEventListener('click', function () {
+        window.CGW.addToBag(product.id, selectedSize);
+        window.location.href = 'checkout.html';
+      });
+    }
+  }
+
+  function wireAddToBag() {
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-add-to-bag]');
+      if (!btn || btn.disabled) return;
+      var id = btn.getAttribute('data-add-to-bag');
+      var product = productById(id);
+      var size = (product && product.sizes && product.sizes[0]) || 'One Size';
+      window.CGW.addToBag(id, size);
+      updateBagCount();
+      btn.textContent = 'Added ✓';
+      setTimeout(function () { btn.textContent = 'Add to Bag'; }, 1200);
+    });
+  }
+
+  // ---------- Search overlay ----------
+  function renderSearch() {
+    var wrap = document.createElement('div');
+    wrap.className = 'search-overlay';
+    wrap.id = 'search-overlay';
+    wrap.innerHTML =
+      '<div class="search-panel">' +
+        '<div class="search-bar">' +
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>' +
+          '<input type="search" id="search-input" placeholder="Search dresses, sets, tops…" autocomplete="off">' +
+          '<button class="btn-icon" id="search-close" aria-label="Close search">&times;</button>' +
+        '</div>' +
+        '<div class="search-results" id="search-results"><p class="search-hint">Start typing to find your next favourite fit.</p></div>' +
+      '</div>';
+    document.body.appendChild(wrap);
+
+    var input = wrap.querySelector('#search-input');
+    var results = wrap.querySelector('#search-results');
+    function open() { wrap.classList.add('is-open'); setTimeout(function () { input.focus(); }, 60); }
+    function close() { wrap.classList.remove('is-open'); }
+    var openBtn = document.getElementById('search-open-btn');
+    if (openBtn) openBtn.addEventListener('click', open);
+    wrap.querySelector('#search-close').addEventListener('click', close);
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+
+    input.addEventListener('input', function () {
+      var q = input.value.trim().toLowerCase();
+      if (!q) { results.innerHTML = '<p class="search-hint">Start typing to find your next favourite fit.</p>'; return; }
+      var matches = content.products.filter(function (p) {
+        return (p.name + ' ' + p.category + ' ' + (p.description || '')).toLowerCase().indexOf(q) !== -1;
+      });
+      if (!matches.length) { results.innerHTML = '<p class="search-hint">No matches — try “dress”, “set” or “top”.</p>'; return; }
+      results.innerHTML = matches.map(function (p) {
+        return '<button class="search-result" data-quickview="' + p.id + '">' +
+          '<img src="' + escapeHtml(p.image) + '" alt=""' + ONERR + '>' +
+          '<span class="sr-info"><b>' + escapeHtml(p.name) + '</b><span>' + escapeHtml(p.category) + ' · ' + window.CGW.formatPrice(p.price) + '</span></span>' +
+          '</button>';
+      }).join('');
+    });
+    // Opening a result opens the quick view (global handler) — close search first.
+    results.addEventListener('click', function (e) { if (e.target.closest('[data-quickview]')) close(); });
+  }
+
+  // ---------- Floating WhatsApp button ----------
+  function renderWhatsAppFloat() {
+    var a = document.createElement('a');
+    a.className = 'wa-float';
+    a.href = waLink('Hi CityGirl! I need help with an order.');
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.setAttribute('aria-label', 'Chat with CityGirl on WhatsApp');
+    a.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm5.6 14.2c-.2.6-1.4 1.2-1.9 1.3-.5.1-1.1.2-3.5-.8-2.9-1.2-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5.2.6.7 1.9.8 2 .1.2.1.4 0 .6-.1.2-.2.4-.4.6l-.5.6c-.2.2-.3.4-.1.7.2.3.9 1.4 1.9 2.3 1.3 1.2 2.4 1.5 2.7 1.7.3.2.5.1.7-.1l.9-1c.2-.3.4-.2.7-.1l1.8.9c.2.1.4.2.5.3.1.2.1.9-.1 1.5Z"/></svg>' +
+      '<span class="wa-float-label">Chat with CityGirl</span>';
+    document.body.appendChild(a);
+  }
+
+  function wireNav() {
+    var toggle = document.querySelector('.nav-toggle');
+    var links = document.querySelector('.nav-links');
+    if (toggle && links) {
+      toggle.addEventListener('click', function () {
+        var open = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', String(!open));
+        links.classList.toggle('open', !open);
+      });
+    }
+    var header = document.getElementById('site-header');
+    if (header) {
+      var setState = function () { header.classList.toggle('is-scrolled', window.scrollY > 12); };
+      setState();
+      window.addEventListener('scroll', setState, { passive: true });
+    }
+  }
+
+  function wireReveal() {
+    document.querySelectorAll('.grid, .chip-row').forEach(function (group) {
+      group.querySelectorAll(':scope > [data-reveal]').forEach(function (item, i) {
+        item.style.setProperty('--reveal-delay', Math.min(i * 70, 350) + 'ms');
+      });
+    });
+    var els = document.querySelectorAll('[data-reveal]');
+    if (!els.length) return;
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      els.forEach(function (el) { el.classList.add('is-visible'); });
+      return;
+    }
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    els.forEach(function (el) { observer.observe(el); });
+  }
+
+  function wireBackToTop() {
+    var btn = document.querySelector('.back-to-top');
+    if (!btn) return;
+    window.addEventListener('scroll', function () { btn.classList.toggle('visible', window.scrollY > 480); }, { passive: true });
+    btn.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); });
+  }
+
+  window.CGWRender = {
+    content: content,
+    escapeHtml: escapeHtml,
+    logoBadgeHtml: logoBadgeHtml,
+    productCardHtml: productCardHtml,
+    starsHtml: starsHtml,
+    isBestseller: isBestseller,
+    waLink: waLink,
+    renderAnnouncement: renderAnnouncement,
+    renderHeader: renderHeader,
+    renderFooter: renderFooter,
+    renderNewsletterModal: renderNewsletterModal,
+    renderBagDrawer: renderBagDrawer,
+    renderBagContents: renderBagContents,
+    renderQuickView: renderQuickView,
+    updateBagCount: updateBagCount,
+    wireReveal: wireReveal,
+    init: function (activePage) {
+      renderAnnouncement();
+      renderHeader(activePage);
+      renderFooter();
+      renderNewsletterModal();
+      renderBagDrawer();
+      renderQuickView();
+      renderSearch();
+      renderWhatsAppFloat();
+      wireAddToBag();
+      wireNav();
+      wireBackToTop();
+      updateBagCount();
+    }
+  };
+})();
