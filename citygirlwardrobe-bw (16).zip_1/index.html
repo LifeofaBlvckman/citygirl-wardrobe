@@ -7,7 +7,7 @@
 <meta name="description" content="CityGirl Wardrobe — feminine, fun clothing and accessories for the girl who runs the city. Shop dresses, sets, tops, bottoms and accessories. We ship worldwide.">
 <link rel="icon" href="assets/img/logo.png">
 <link rel="stylesheet" href="assets/css/style.css">
-<noscript><style>[data-reveal]{opacity:1!important;transform:none!important;}.hero-headline .reveal-line>span{opacity:1!important;transform:none!important;filter:none!important;}.hero-actions{opacity:1!important;transform:none!important;}.hero-full .hero-bg{opacity:1!important;}</style></noscript>
+<noscript><style>[data-reveal]{opacity:1!important;transform:none!important;}.hero-title,.hero-actions{opacity:1!important;transform:none!important;}.hero-full .hero-bg{opacity:1!important;}</style></noscript>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/js/supabase-config.js"></script>
 </head>
@@ -19,137 +19,62 @@
 
 <main id="main">
 
-  <!-- FULL-BLEED VIDEO HERO -->
+  <!-- FULL-BLEED HERO -->
   <section class="hero hero-full">
     <div class="hero-fill" id="hero-fill" aria-hidden="true"></div>
     <video class="hero-bg" id="hero-video" autoplay muted loop playsinline preload="auto" poster="assets/img/hero-poster.jpg">
       <source src="assets/img/hero-citygirl.mp4" type="video/mp4">
     </video>
     <div class="hero-scrim" aria-hidden="true"></div>
-    <div class="container hero-full-inner">
-      <span class="eyebrow eyebrow-light"><span class="dot"></span>The CityGirl Edit</span>
-      <h1 class="hero-headline hero-outline" id="hero-heading" aria-label="City Girl Energy. Dressed to Match.">City Girl Energy.<br>Dressed to Match.</h1>
+    <div class="hero-full-inner">
+      <h1 class="hero-title" id="hero-heading">City Girl Energy. Dressed to Match.</h1>
       <div class="hero-actions">
-        <a href="shop.html?filter=new" class="btn btn-on-photo" id="hero-cta">Shop New In</a>
-        <a href="shop.html?filter=bestsellers" class="btn btn-outline-light" id="hero-cta2">Shop Bestsellers</a>
+        <a href="shop.html?filter=new" class="btn btn-primary btn-on-dark" id="hero-cta">Shop New In</a>
+        <a href="shop.html?filter=bestsellers" class="btn btn-light" id="hero-cta2">Shop Bestsellers</a>
       </div>
     </div>
   </section>
 
-  <!-- BRAND MARQUEE -->
-  <div class="marquee" aria-hidden="true">
-    <div class="marquee-track">
-      <span>New In</span><span>Dresses</span><span>Sets</span><span>Tops</span><span>Bottoms</span><span>Accessories</span>
-      <span>New In</span><span>Dresses</span><span>Sets</span><span>Tops</span><span>Bottoms</span><span>Accessories</span>
+  <!-- COLLECTIONS -->
+  <section class="home-section" aria-label="Collections">
+    <div class="rail rail-collections rail-split" id="collections-top"></div>
+  </section>
+
+  <!-- SHIPPING STRIP -->
+  <div class="marquee" role="note" aria-label="We ship worldwide. Lagos delivery in 1–3 days. Free Lagos delivery over ₦50,000.">
+    <div class="marquee-track" aria-hidden="true">
+      <span>We ship worldwide</span><span>Lagos delivery in 1–3 days</span><span>Free Lagos delivery over ₦50,000</span>
+      <span>We ship worldwide</span><span>Lagos delivery in 1–3 days</span><span>Free Lagos delivery over ₦50,000</span>
     </div>
   </div>
 
-  <!-- CATEGORY CHIPS -->
-  <section style="padding-block:clamp(40px,6vw,64px) 0;">
-    <div class="container">
-      <div class="chip-row" id="category-chips"></div>
-    </div>
+  <!-- BEST SELLERS -->
+  <section class="home-section">
+    <div class="container"><h2 class="section-title">Best Sellers</h2></div>
+    <div class="rail rail-products" id="bestseller-rail"></div>
   </section>
 
-  <!-- NEW IN (Fresh Drops — auto-sliding) -->
-  <section>
-    <div class="container">
-      <div class="section-head center" data-reveal>
-        <span class="eyebrow"><span class="dot"></span>Fresh Drops</span>
-        <h2>New In This Week</h2>
-        <p class="lead">The latest CityGirl gowns — fresh off the rack.</p>
-      </div>
-    </div>
-    <div class="container drops-wrap" data-reveal>
-      <button class="drops-arrow drops-prev" aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <div class="drops-viewport" id="drops-viewport"></div>
-      <button class="drops-arrow drops-next" aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
-    </div>
-    <div class="container"><div class="center" style="margin-top:34px;"><a href="shop.html?filter=new" class="btn btn-outline">Shop All New In</a></div></div>
+  <!-- SHOP BY CATEGORY -->
+  <section class="home-section" aria-label="Shop by category">
+    <div class="rail rail-collections" id="collections-categories"></div>
   </section>
 
-  <!-- CITYGIRL FAVOURITES (BEST SELLERS) -->
-  <section class="section-alt">
-    <div class="container">
-      <div class="section-head center" data-reveal>
-        <span class="eyebrow"><span class="dot"></span>Loved by CityGirls</span>
-        <h2>The CityGirl Favourites</h2>
-        <p class="lead">The pieces CityGirls can't stop buying — restocked and ready to ship.</p>
-      </div>
-      <div class="grid grid-4" id="bestseller-grid"></div>
-      <div class="center" style="margin-top:38px;"><a href="shop.html?filter=bestsellers" class="btn btn-primary">Shop Bestsellers</a></div>
-    </div>
+  <!-- NEW IN -->
+  <section class="home-section">
+    <div class="container"><h2 class="section-title">New In</h2></div>
+    <div class="rail rail-products" id="newin-rail"></div>
   </section>
 
-  <!-- WHY SHOP WITH US -->
-  <section>
-    <div class="container">
-      <div class="section-head center" data-reveal>
-        <span class="eyebrow"><span class="dot"></span>Why CityGirl</span>
-        <h2>Shopping with us feels this good</h2>
-      </div>
-      <div class="grid grid-3" data-reveal>
-        <div class="value-card">
-          <span class="value-icon i-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg></span>
-          <h3>Picked With Love</h3>
-          <p class="text-muted">Every piece is chosen (and worn) by us first. If we wouldn't wear it, it's not in the shop.</p>
-        </div>
-        <div class="value-card">
-          <span class="value-icon i-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span>
-          <h3>Checkout Your Way</h3>
-          <p class="text-muted">Pay securely online at checkout, or send your bag straight to WhatsApp — whatever's easier for you.</p>
-        </div>
-        <div class="value-card">
-          <span class="value-icon i-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z"/></svg></span>
-          <h3>Shipped Worldwide</h3>
-          <p class="text-muted">Based in Lagos and delivering to your door anywhere in the world — tracked and packaged with care.</p>
-        </div>
-      </div>
-    </div>
+  <!-- REVIEWS -->
+  <section class="home-section" id="reviews-section">
+    <div class="container"><h2 class="section-title">Reviews</h2></div>
+    <div class="rail rail-reviews" id="reviews-rail"></div>
   </section>
 
-  <!-- REVIEWS (dark, sliding) -->
-  <section class="reviews-section section-dark">
-    <div class="container">
-      <div class="section-head center" data-reveal>
-        <span class="eyebrow eyebrow-light"><span class="dot"></span>CityGirls IRL</span>
-        <h2>The CityGirls Love Us</h2>
-        <p class="lead">Real reviews from real CityGirls across the world.</p>
-      </div>
-      <div class="reviews-slider" data-reveal>
-        <button class="rev-arrow rev-prev" aria-label="Previous review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-        <div class="reviews-viewport"><div class="reviews-track" id="reviews-track"></div></div>
-        <button class="rev-arrow rev-next" aria-label="Next review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
-      </div>
-      <div class="reviews-dots" id="reviews-dots"></div>
-    </div>
-  </section>
-
-  <!-- INSTAGRAM (looping strip) -->
-  <section class="insta-section">
-    <div class="container">
-      <div class="section-head center" data-reveal>
-        <span class="eyebrow"><span class="dot"></span>@<span id="ig-handle">shopcitygirlng</span></span>
-        <h2>Follow the CityGirl Life</h2>
-        <p class="lead">Tag <b>@<span id="ig-handle-2">shopcitygirlng</span></b> to be featured. New looks every week.</p>
-      </div>
-    </div>
-    <div class="insta-marquee"><div class="insta-loop" id="insta-loop"></div></div>
-    <div class="container"><div class="center" style="margin-top:34px;"><a href="#" id="ig-follow" target="_blank" rel="noopener" class="btn btn-outline">Follow on Instagram</a></div></div>
-  </section>
-
-  <!-- NEWSLETTER STRIP -->
-  <section>
-    <div class="container">
-      <div class="newsletter-strip" data-reveal>
-        <h2 id="strip-heading">Get 10% Off Your First Order</h2>
-        <p style="color:rgba(255,255,255,0.82);margin:0;">Join the CityGirl fam for early drops and secret restocks.</p>
-        <form id="footer-newsletter-form">
-          <input type="email" required placeholder="Enter your email">
-          <button type="submit" class="btn" style="background:#fff;color:#0b0b0b;">Subscribe</button>
-        </form>
-      </div>
-    </div>
+  <!-- INSTAGRAM -->
+  <section class="home-section">
+    <div class="container"><h2 class="section-title"><a href="#" id="ig-follow" target="_blank" rel="noopener">@<span id="ig-handle">shopcitygirlng</span></a></h2></div>
+    <div class="rail rail-insta" id="insta-rail"></div>
   </section>
 
 </main>
@@ -171,29 +96,13 @@
   var content = CGWRender.content;
   var esc = CGWRender.escapeHtml;
 
-  // Kinetic headline: one line per sentence, each rising + sharpening from blur.
-  // (Split on ". " manually — avoids lookbehind regex, which breaks older Safari.)
-  (function buildHeadline() {
-    var el = document.getElementById('hero-heading');
-    var raw = (content.hero.heading || '').trim();
-    var parts = raw.split('. ');
-    var lines = parts.map(function (p, i) {
-      p = p.trim();
-      if (!p) return '';
-      return (i < parts.length - 1) ? p + '.' : p;
-    }).filter(Boolean);
-    if (lines.length < 2) lines = raw.split(/\s+/);
-    el.setAttribute('aria-label', raw);
-    el.innerHTML = lines.map(function (line, i) {
-      return '<span class="reveal-line" style="--line-delay:' + (140 + i * 150) + 'ms"><span>' + esc(line) + '</span></span>';
-    }).join('');
-  })();
+  document.getElementById('hero-heading').textContent = content.hero.heading;
 
   // Hero media: video by default; if the owner set a custom hero image in Admin,
   // show that image instead.
   var customImage = content.hero.image && content.hero.image !== 'assets/img/hero-red-dress.jpg';
   var videoEl = document.getElementById('hero-video');
-  // Blurred backdrop fills the wide gaps so the (vertical) video reads full-bleed.
+  // Blurred backdrop fills the gaps while the media loads.
   var fillEl = document.getElementById('hero-fill');
   if (fillEl) fillEl.style.backgroundImage = 'url("' + (customImage ? content.hero.image : (content.hero.poster || 'assets/img/hero-poster.jpg')) + '")';
   if (customImage && videoEl) {
@@ -215,114 +124,77 @@
   cta.textContent = content.hero.buttonText; cta.href = content.hero.buttonLink;
   var cta2 = document.getElementById('hero-cta2');
   if (content.hero.buttonText2) { cta2.textContent = content.hero.buttonText2; cta2.href = content.hero.buttonLink2 || 'shop.html?filter=bestsellers'; }
-  document.getElementById('strip-heading').textContent = content.newsletter.heading.replace(/\s*💕\s*$/, '');
-
-  // Category chips → shop filters
-  var chips = [{ k: 'shop.html?filter=new', l: 'New In' }]
-    .concat(content.categories.map(function (c) { return { k: 'shop.html?cat=' + encodeURIComponent(c), l: c }; }))
-    .concat([{ k: 'shop.html?filter=bestsellers', l: 'Bestsellers' }]);
-  document.getElementById('category-chips').innerHTML = chips.map(function (c, i) {
-    return '<a href="' + c.k + '" class="chip' + (i === 0 ? ' is-active' : '') + '">' + esc(c.l) + '</a>';
-  }).join('');
+  else cta2.hidden = true;
 
   // ---- Product-dependent sections (built once, after trying live data) ----
-  function buildFreshDrops() {
-    var vp = document.getElementById('drops-viewport');
-    if (!vp) return;
-    var newIn = content.products.filter(function (p) { return p.tag === 'New'; });
-    if (!newIn.length) newIn = content.products.slice(0, 6);
-    vp.innerHTML = newIn.map(function (p) { return '<div class="drops-slide">' + CGWRender.productCardHtml(p) + '</div>'; }).join('');
-    var timer = null;
-    function step(dir) {
-      var slide = vp.querySelector('.drops-slide');
-      if (!slide) return;
-      var cs = getComputedStyle(vp);
-      var gap = parseFloat(cs.columnGap || cs.gap) || 16;
-      var w = slide.getBoundingClientRect().width + gap;
-      var maxLeft = vp.scrollWidth - vp.clientWidth - 4;
-      if (dir > 0) { if (vp.scrollLeft >= maxLeft) vp.scrollTo({ left: 0, behavior: 'smooth' }); else vp.scrollBy({ left: w, behavior: 'smooth' }); }
-      else { if (vp.scrollLeft <= 4) vp.scrollTo({ left: maxLeft, behavior: 'smooth' }); else vp.scrollBy({ left: -w, behavior: 'smooth' }); }
-    }
-    function start() { stop(); timer = setInterval(function () { step(1); }, 3500); }
-    function stop() { if (timer) { clearInterval(timer); timer = null; } }
-    document.querySelector('.drops-prev').addEventListener('click', function () { step(-1); start(); });
-    document.querySelector('.drops-next').addEventListener('click', function () { step(1); start(); });
-    var wrap = document.querySelector('.drops-wrap');
-    wrap.addEventListener('mouseenter', stop);
-    wrap.addEventListener('mouseleave', start);
-    vp.addEventListener('touchstart', stop, { passive: true });
-    vp.addEventListener('touchend', function () { setTimeout(start, 2500); }, { passive: true });
-    start();
+  function newIn() {
+    var list = content.products.filter(function (p) { return p.tag === 'New'; });
+    return list.length ? list : content.products.slice(0, 6);
+  }
+  function bestsellers() {
+    var list = content.products.filter(CGWRender.isBestseller);
+    return list.length ? list : content.products.slice(0, 6);
   }
 
-  function buildBestsellers() {
-    var best = content.products.filter(CGWRender.isBestseller);
-    if (!best.length) best = content.products.slice(0, 4);
-    document.getElementById('bestseller-grid').innerHTML = best.slice(0, 4).map(CGWRender.productCardHtml).join('');
+  // Cover photo for a collection card — prefer a product not already used as a cover.
+  function coverFrom(list, used) {
+    var pick = list.find(function (p) { return p.image && used.indexOf(p.image) === -1; }) || list[0];
+    if (!pick) return null;
+    used.push(pick.image);
+    return pick.image;
+  }
+
+  function buildCollections() {
+    var used = [];
+    var top = [
+      { title: 'New In', href: 'shop.html?filter=new', image: coverFrom(newIn(), used) },
+      { title: 'Trending', href: 'shop.html?filter=bestsellers', image: coverFrom(bestsellers(), used) }
+    ].filter(function (c) { return c.image; });
+    document.getElementById('collections-top').innerHTML = top.map(CGWRender.collectionCardHtml).join('');
+
+    var cats = content.categories.map(function (c) {
+      var inCat = content.products.filter(function (p) { return p.category === c; });
+      return inCat.length ? { title: c, href: 'shop.html?cat=' + encodeURIComponent(c), image: coverFrom(inCat, used) } : null;
+    }).filter(Boolean);
+    document.getElementById('collections-categories').innerHTML = cats.map(CGWRender.collectionCardHtml).join('');
+  }
+
+  function buildProductRails() {
+    document.getElementById('bestseller-rail').innerHTML = bestsellers().slice(0, 10).map(CGWRender.productCardHtml).join('');
+    document.getElementById('newin-rail').innerHTML = newIn().slice(0, 10).map(CGWRender.productCardHtml).join('');
   }
 
   function buildReviews() {
-    var track = document.getElementById('reviews-track');
-    var dotsWrap = document.getElementById('reviews-dots');
     var reviews = content.reviews || [];
-    if (!track || !reviews.length) return;
-    track.innerHTML = reviews.map(function (r) {
-      return '<div class="review-slide"><div class="review-card">' +
+    if (!reviews.length) { document.getElementById('reviews-section').hidden = true; return; }
+    document.getElementById('reviews-rail').innerHTML = reviews.map(function (r) {
+      return '<div class="review-card">' +
         '<div class="review-stars">' + CGWRender.starsHtml(r.rating || 5, 0) + '</div>' +
-        '<p class="review-text">\u201c' + esc(r.text) + '\u201d</p>' +
+        '<p class="review-text">“' + esc(r.text) + '”</p>' +
         '<div class="review-meta"><b>' + esc(r.name) + '</b>' + (r.product ? '<span>' + esc(r.product) + '</span>' : '') + '</div>' +
-      '</div></div>';
+      '</div>';
     }).join('');
-    dotsWrap.innerHTML = reviews.map(function (_, i) {
-      return '<button class="rev-dot' + (i === 0 ? ' is-active' : '') + '" data-i="' + i + '" aria-label="Go to review ' + (i + 1) + '"></button>';
-    }).join('');
-    var idx = 0, n = reviews.length;
-    var dots = dotsWrap.querySelectorAll('.rev-dot');
-    function go(i) {
-      idx = (i + n) % n;
-      track.style.transform = 'translateX(-' + (idx * 100) + '%)';
-      dots.forEach(function (d, di) { d.classList.toggle('is-active', di === idx); });
-    }
-    var timer = null;
-    function start() { stop(); timer = setInterval(function () { go(idx + 1); }, 5000); }
-    function stop() { if (timer) { clearInterval(timer); timer = null; } }
-    document.querySelector('.rev-prev').addEventListener('click', function () { go(idx - 1); start(); });
-    document.querySelector('.rev-next').addEventListener('click', function () { go(idx + 1); start(); });
-    dots.forEach(function (d) { d.addEventListener('click', function () { go(parseInt(d.getAttribute('data-i'), 10)); start(); }); });
-    var slider = document.querySelector('.reviews-slider');
-    slider.addEventListener('mouseenter', stop);
-    slider.addEventListener('mouseleave', start);
-    var x0 = null;
-    slider.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; stop(); }, { passive: true });
-    slider.addEventListener('touchend', function (e) {
-      if (x0 !== null) { var dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) go(idx + (dx < 0 ? 1 : -1)); }
-      x0 = null; start();
-    });
-    start();
   }
 
   function buildInstagram() {
     var handle = content.meta.instagram;
     var igUrl = 'https://instagram.com/' + encodeURIComponent(handle);
     document.getElementById('ig-handle').textContent = handle;
-    document.getElementById('ig-handle-2').textContent = handle;
     document.getElementById('ig-follow').href = igUrl;
     var gallery = (content.gallery && content.gallery.length) ? content.gallery :
       ['fashion,street', 'model,style', 'outfit,woman', 'dress,fashion', 'accessories,style', 'lookbook,fashion', 'runway,fashion', 'portrait,style']
         .map(function (kw, i) { return 'https://loremflickr.com/500/500/' + kw + '/all?lock=' + (60 + i); });
-    var cells = gallery.map(function (src) {
+    document.getElementById('insta-rail').innerHTML = gallery.map(function (src) {
       return '<a class="insta-cell" href="' + igUrl + '" target="_blank" rel="noopener" aria-label="Instagram">' +
-        '<img src="' + esc(src) + '" alt="" onerror="this.onerror=null;this.src=\'assets/img/product-fallback.jpg\'">' +
-        '<span class="insta-ig"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1"/></svg></span>' +
+        '<img src="' + esc(src) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'assets/img/product-fallback.jpg\'">' +
       '</a>';
     }).join('');
-    document.getElementById('insta-loop').innerHTML = cells + cells;
   }
 
   // Pull live data from Supabase when available, then build the sections. Falls
   // back to the bundled sample content if the database is empty or unreachable.
   (function loadAndBuild() {
-    function build() { buildFreshDrops(); buildBestsellers(); buildReviews(); buildInstagram(); CGWRender.wireReveal(); }
+    function build() { buildCollections(); buildProductRails(); buildReviews(); buildInstagram(); CGWRender.wireReveal(); }
     if (window.CGWDB) {
       Promise.all([CGWDB.products(), CGWDB.reviews(), CGWDB.gallery()]).then(function (res) {
         if (res[0] && res[0].length) content.products = res[0];
@@ -332,19 +204,6 @@
     } else { build(); }
   })();
 
-  document.getElementById('footer-newsletter-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var input = e.target.querySelector('input[type="email"]');
-    window.CGW.addSubscriber(input.value);
-    localStorage.setItem('cgw_subscribed', '1');
-    input.value = '';
-    var btn = e.target.querySelector('button');
-    var original = btn.textContent;
-    btn.textContent = 'Subscribed ✓';
-    setTimeout(function () { btn.textContent = original; }, 2000);
-  });
-
-  CGWRender.wireReveal();
   requestAnimationFrame(function () { requestAnimationFrame(function () { document.body.classList.add('is-loaded'); }); });
 </script>
 </body>
