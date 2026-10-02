@@ -8,7 +8,7 @@
    supplies monochrome values so the Admin "theme" switcher stays on-brand.
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;900&family=Montserrat:wght@400;500;600;800&family=Space+Mono&display=swap');
+/* Fonts are loaded by a <link> in each page's <head> (faster than @import). */
 
 :root {
   color-scheme: light;
@@ -914,3 +914,99 @@ img, video, iframe { max-width: 100%; }
   .drops-prev { left: 8px; }
   .drops-next { right: 8px; }
 }
+
+/* ============================================================
+   Production polish — states, feedback and motion
+   (all motion collapses to instant under prefers-reduced-motion,
+   via the global rule at the top of this file)
+   ============================================================ */
+
+/* Scroll lock while a drawer / popup is open */
+html.is-locked, html.is-locked body { overflow: hidden; }
+
+/* "Added to bag" toast */
+.cgw-toast {
+  position: fixed; left: 50%; top: calc(var(--header-h) + 12px); z-index: 600;
+  transform: translate(-50%, -16px); opacity: 0; pointer-events: none;
+  background: #0b0b0b; color: #fff; padding: 12px 20px; border-radius: var(--radius-full);
+  font-family: var(--font-ui); font-size: 0.82rem; letter-spacing: 0.02em; white-space: nowrap;
+  max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  transition: opacity 260ms ease, transform 420ms var(--ease-out);
+}
+.cgw-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+
+/* Bag count pops when something is added */
+@keyframes bag-bump { 0% { transform: scale(1); } 35% { transform: scale(1.45); } 100% { transform: scale(1); } }
+.bag-count.is-bump { animation: bag-bump 450ms var(--ease-out); }
+
+/* Checkout: unavailable payment option + error box */
+.delivery-option.is-disabled { opacity: 0.5; cursor: not-allowed; }
+.delivery-option.is-disabled:hover { border-color: var(--brand-border); }
+.pay-error { border-color: var(--signal); background: #fff5f4; color: #0b0b0b; }
+.pay-error .btn { display: inline-flex; }
+button:disabled { cursor: not-allowed; }
+.btn:disabled { opacity: 0.6; }
+
+/* Page fade-in (CSS only, so content shows even without JavaScript) */
+@keyframes page-in { from { opacity: 0; } to { opacity: 1; } }
+main { animation: page-in 500ms ease both; }
+
+/* Hero: slow settle-in zoom on the photo/video */
+@keyframes hero-zoom { from { transform: scale(1.08); } to { transform: scale(1); } }
+.is-loaded .hero-full .hero-bg { animation: hero-zoom 2.6s var(--ease-out) both; }
+.hero-actions .btn:nth-child(2) { transition-delay: 80ms; }
+
+/* Swipe rows: cards glide in one after another when the row comes on screen */
+.rail.will-animate > * {
+  opacity: 0; transform: translateX(28px);
+  transition: opacity 600ms ease, transform 800ms var(--ease-out);
+  transition-delay: calc(min(var(--i, 0), 6) * 90ms);
+}
+.rail.will-animate.is-in > * { opacity: 1; transform: none; }
+
+/* Collection cards: photo unveils upwards */
+.rail.will-animate .collection-card img { clip-path: inset(100% 0 0 0); transform: scale(1.12); transition: clip-path 1100ms var(--ease-out), transform 1400ms var(--ease-out); transition-delay: calc(min(var(--i, 0), 6) * 120ms); }
+.rail.will-animate.is-in .collection-card img { clip-path: inset(0 0 0 0); transform: none; }
+.rail.is-in .collection-card:hover img { transform: scale(1.03); }
+
+/* Product cards: lift the bag button, press feedback */
+.card-bag-btn { transition: transform 300ms var(--ease-out), box-shadow 300ms ease, background 200ms ease, color 200ms ease; }
+.product-card:hover .card-bag-btn { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.14); }
+.card-bag-btn:hover { background: #0b0b0b; color: #fff; }
+.card-bag-btn:active, .btn:active, .promo-pill-btn:active { transform: scale(0.96); }
+
+/* Collection "View all" underline grows on hover */
+.collection-link { background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat; transition: background-size 400ms var(--ease-out); }
+.collection-card:hover .collection-link { background-size: 100% 1px; }
+
+/* Menu: links slide in one by one */
+.menu-links a { opacity: 0; transform: translateX(-16px); transition: opacity 400ms ease, transform 500ms var(--ease-out), background 200ms ease; }
+.menu-overlay.is-open .menu-links a { opacity: 1; transform: none; }
+.menu-overlay.is-open .menu-links a:nth-child(1) { transition-delay: 120ms; }
+.menu-overlay.is-open .menu-links a:nth-child(2) { transition-delay: 160ms; }
+.menu-overlay.is-open .menu-links a:nth-child(3) { transition-delay: 200ms; }
+.menu-overlay.is-open .menu-links a:nth-child(4) { transition-delay: 240ms; }
+.menu-overlay.is-open .menu-links a:nth-child(5) { transition-delay: 280ms; }
+.menu-overlay.is-open .menu-links a:nth-child(6) { transition-delay: 320ms; }
+.menu-overlay.is-open .menu-links a:nth-child(7) { transition-delay: 360ms; }
+.menu-overlay.is-open .menu-links a:nth-child(n+8) { transition-delay: 400ms; }
+
+/* Discount pill: slides up on arrival, then a light shine sweeps across */
+@keyframes pill-in { from { opacity: 0; transform: translate(-50%, 30px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes pill-shine { 0%, 55% { transform: translateX(-120%) skewX(-20deg); } 75%, 100% { transform: translateX(320%) skewX(-20deg); } }
+.promo-pill { animation: pill-in 700ms var(--ease-out) 600ms both; }
+.promo-pill-btn { position: relative; overflow: hidden; }
+.promo-pill-btn::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+  animation: pill-shine 5s ease-in-out 1.6s infinite; pointer-events: none;
+}
+
+/* Quick view + newsletter popup: soft scale-in (overlay already fades) */
+.modal-overlay .newsletter-modal { transition: transform 420ms var(--ease-out), opacity 320ms ease; opacity: 0; }
+.modal-overlay.is-open .newsletter-modal { opacity: 1; }
+
+
+/* Keyboard focus that stays visible on dark and light backgrounds */
+.card-bag-btn:focus-visible, .promo-pill-btn:focus-visible, .collection-card:focus-visible { outline: 2px solid #0b0b0b; outline-offset: 3px; box-shadow: 0 0 0 5px #fff; }

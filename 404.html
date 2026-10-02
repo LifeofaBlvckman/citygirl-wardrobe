@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- This page is served for any missing URL, at any depth, so resolve links from the site root. -->
+<base href="/">
+<title>Page Not Found | CityGirl Wardrobe</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" sizes="512x512" href="/assets/img/logo.png">
+<link rel="apple-touch-icon" href="/assets/img/logo-192.png">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;900&family=Montserrat:wght@400;500;600;800&family=Space+Mono&display=swap">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div id="announcement-bar" class="announcement-bar"></div>
+<header class="site-header" id="site-header"></header>
+
+<main id="main">
+  <section class="page-hero">
+    <div class="container">
+      <div class="breadcrumb"><a href="index.html">Home</a> / Not found</div>
+      <h1>This page went out to brunch</h1>
+      <p>We couldn't find what you were looking for. It may have moved, or the link might be old.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:28px;">
+        <a href="shop.html" class="btn btn-primary">Shop the collection</a>
+        <a href="index.html" class="btn btn-outline">Back to home</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+<div id="newsletter-modal-root"></div>
+<div id="bag-drawer-root"></div>
+<div id="quickview-modal-root"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-config.js"></script>
+<script src="assets/js/store-data.js"></script>
+<script src="assets/js/render.js"></script>
+<script>CGWRender.init('404.html');</script>
+</body>
+</html>

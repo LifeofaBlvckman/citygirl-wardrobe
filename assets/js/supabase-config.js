@@ -63,7 +63,8 @@
 
     // ---- Newsletter (write) ----
     addSubscriber: function (email) {
-      return sb.from('subscribers').upsert({ email: email }, { onConflict: 'email' });
+      // ignoreDuplicates → ON CONFLICT DO NOTHING, which only needs the insert policy.
+      return sb.from('subscribers').upsert({ email: email }, { onConflict: 'email', ignoreDuplicates: true });
     },
 
     // ---- Customer accounts ----

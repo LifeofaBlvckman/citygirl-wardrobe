@@ -376,7 +376,7 @@
           var items = (o.items || []).reduce(function (n, i) { return n + (i.qty || 1); }, 0);
           var d = new Date(o.created_at);
           return '<tr>' +
-            '<td><b>' + esc(o.ref || '') + '</b></td>' +
+            '<td><b>' + esc(o.ref || '') + '</b>' + (c.payment ? '<br><span class="text-muted" style="font-size:0.78rem;">' + esc(c.payment) + (c.delivery ? ' · ' + esc(c.delivery) : '') + '</span>' : '') + '</td>' +
             '<td>' + d.toLocaleDateString() + '</td>' +
             '<td>' + esc(name) + (contact ? '<br><span class="text-muted" style="font-size:0.78rem;">' + esc(contact) + '</span>' : '') + '</td>' +
             '<td>' + items + '</td>' +

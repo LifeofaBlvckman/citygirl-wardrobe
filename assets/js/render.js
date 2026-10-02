@@ -22,7 +22,71 @@
   function waLink(text) {
     return 'https://wa.me/' + encodeURIComponent(content.meta.whatsapp) + (text ? '?text=' + encodeURIComponent(text) : '');
   }
-  function productById(id) { return content.products.find(function (p) { return p.id === id; }); }
+  function productById(id) { return content.products.find(function (p) { return String(p.id) === String(id); }); }
+
+  // ---------- Live catalogue ----------
+  // Every page gets products the same way: bundled sample data first, replaced by
+  // the live Supabase catalogue once it arrives. Pages wait on CGWRender.products().
+  var productsPromise = null;
+  function loadProducts() {
+    if (productsPromise) return productsPromise;
+    productsPromise = (window.CGWDB ? Promise.resolve().then(function () { return window.CGWDB.products(); }) : Promise.resolve([]))
+      .then(function (list) { if (list && list.length) content.products = list; })
+      .catch(function (e) { console.warn('CityGirl: live products unavailable, using bundled data', e); })
+      .then(function () {
+        refreshBagSnapshots();
+        if (document.querySelector('.bag-drawer-overlay.is-open')) renderBagContents();
+        return content.products;
+      });
+    return productsPromise;
+  }
+  // Keep bag snapshots (name/price/photo) in step with the live catalogue.
+  function refreshBagSnapshots() {
+    var bag = window.CGW.getBag(), changed = false;
+    bag.forEach(function (line) {
+      var p = productById(line.id);
+      if (p && (line.name !== p.name || line.price !== p.price || line.image !== p.image)) {
+        line.name = p.name; line.price = p.price; line.image = p.image; changed = true;
+      }
+    });
+    if (changed) window.CGW.saveBag(bag);
+  }
+  // Product for a bag line: live/bundled product if known, otherwise the snapshot.
+  function bagLineProduct(line) {
+    return productById(line.id) || (line.name ? { id: line.id, name: line.name, price: line.price, image: line.image } : null);
+  }
+
+  // ---------- Overlays: one scroll lock + Escape to close ----------
+  var OVERLAYS = '.modal-overlay.is-open, .bag-drawer-overlay.is-open, .menu-overlay.is-open, .search-overlay.is-open';
+  function syncScrollLock() {
+    document.documentElement.classList.toggle('is-locked', !!document.querySelector(OVERLAYS));
+  }
+  function closeAllOverlays() {
+    document.querySelectorAll(OVERLAYS).forEach(function (el) { el.classList.remove('is-open'); });
+    var t = document.querySelector('.nav-toggle'); if (t) t.setAttribute('aria-expanded', 'false');
+    syncScrollLock();
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAllOverlays(); });
+
+  // Small "Added to bag" confirmation.
+  var toastTimer = null;
+  function toast(message) {
+    var el = document.getElementById('cgw-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'cgw-toast'; el.className = 'cgw-toast'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.classList.add('is-visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('is-visible'); }, 2200);
+  }
+  function addProductToBag(product, size, quiet) {
+    window.CGW.addToBag(product.id, size, product);
+    updateBagCount(true);
+    if (!quiet) toast('Added to bag — ' + product.name);
+  }
   function isBestseller(p) { return p.bestseller === true || p.tag === 'Bestseller'; }
   function starsHtml(rating, reviews) {
     var full = Math.round(rating || 5);
@@ -198,15 +262,15 @@
 
     var overlay = document.getElementById('newsletter-overlay');
     var modal = document.getElementById('newsletter-modal');
-    function openModal() { overlay.classList.add('is-open'); }
-    function closeModal() { overlay.classList.remove('is-open'); }
+    function openModal() { modal.classList.remove('is-success'); overlay.classList.add('is-open'); syncScrollLock(); }
+    function closeModal() { overlay.classList.remove('is-open'); syncScrollLock(); }
     window.CGW.openNewsletter = openModal;
     document.getElementById('newsletter-close').addEventListener('click', closeModal);
     overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
     document.getElementById('newsletter-form').addEventListener('submit', function (e) {
       e.preventDefault();
       window.CGW.addSubscriber(e.target.querySelector('input[type="email"]').value);
-      localStorage.setItem('cgw_subscribed', '1');
+      try { localStorage.setItem('cgw_subscribed', '1'); } catch (err) {}
       modal.classList.add('is-success');
       var pill = document.getElementById('promo-pill');
       if (pill) { pill.hidden = true; document.body.classList.remove('has-promo'); }
@@ -229,8 +293,8 @@
     var overlay = document.getElementById('bag-overlay');
     document.getElementById('bag-close-btn').addEventListener('click', closeBag);
     overlay.addEventListener('click', function (e) { if (e.target === overlay) closeBag(); });
-    function openBag() { renderBagContents(); overlay.classList.add('is-open'); }
-    function closeBag() { overlay.classList.remove('is-open'); }
+    function openBag() { renderBagContents(); overlay.classList.add('is-open'); syncScrollLock(); }
+    function closeBag() { overlay.classList.remove('is-open'); syncScrollLock(); }
     window.CGW.openBag = openBag;
     var openBtn = document.getElementById('bag-open-btn');
     if (openBtn) openBtn.addEventListener('click', openBag);
@@ -243,7 +307,7 @@
     if (!itemsEl) return;
 
     var lineItems = bag.map(function (entry) {
-      var product = productById(entry.id);
+      var product = bagLineProduct(entry);
       return product ? { product: product, size: entry.size, qty: entry.qty } : null;
     }).filter(Boolean);
 
@@ -262,9 +326,9 @@
             '<h4>' + escapeHtml(li.product.name) + '</h4>' +
             '<span class="text-muted">' + window.CGW.formatPrice(li.product.price) + (li.size && li.size !== 'One Size' ? ' · Size ' + escapeHtml(li.size) : '') + '</span>' +
             '<div class="bag-qty">' +
-              '<button data-qty-id="' + li.product.id + '" data-qty-size="' + escapeHtml(li.size) + '" data-delta="-1" aria-label="Decrease quantity">−</button>' +
+              '<button data-qty-id="' + escapeHtml(li.product.id) + '" data-qty-size="' + escapeHtml(li.size) + '" data-delta="-1" aria-label="Decrease quantity">−</button>' +
               '<span>' + li.qty + '</span>' +
-              '<button data-qty-id="' + li.product.id + '" data-qty-size="' + escapeHtml(li.size) + '" data-delta="1" aria-label="Increase quantity">+</button>' +
+              '<button data-qty-id="' + escapeHtml(li.product.id) + '" data-qty-size="' + escapeHtml(li.size) + '" data-delta="1" aria-label="Increase quantity">+</button>' +
             '</div>' +
           '</div>' +
         '</div>'
@@ -295,12 +359,13 @@
     updateBagCount();
   }
 
-  function updateBagCount() {
+  function updateBagCount(bump) {
     var count = window.CGW.getBag().reduce(function (sum, i) { return sum + i.qty; }, 0);
     var el = document.getElementById('bag-count');
     if (!el) return;
     el.textContent = count;
     el.hidden = count === 0;
+    if (bump && !reduceMotion) { el.classList.remove('is-bump'); void el.offsetWidth; el.classList.add('is-bump'); }
   }
 
   // ---------- Rich product quick view ----------
@@ -310,13 +375,14 @@
     root.innerHTML = '<div class="modal-overlay" id="qv-overlay"></div>';
     var overlay = document.getElementById('qv-overlay');
 
-    function close() { overlay.classList.remove('is-open'); }
+    function close() { overlay.classList.remove('is-open'); syncScrollLock(); }
 
     document.addEventListener('click', function (e) {
       var trigger = e.target.closest('[data-quickview]');
       if (!trigger) return;
       var product = productById(trigger.getAttribute('data-quickview'));
       if (!product) return;
+      e.preventDefault();
       openFor(product);
     });
     overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
@@ -374,7 +440,11 @@
         '</div>';
 
       overlay.classList.add('is-open');
-      document.getElementById('qv-close').addEventListener('click', close);
+      syncScrollLock();
+      overlay.scrollTop = 0;
+      var closeBtn = document.getElementById('qv-close');
+      closeBtn.addEventListener('click', close);
+      closeBtn.focus({ preventScroll: true });
 
       // Gallery thumbnails
       overlay.querySelectorAll('.qv-thumb').forEach(function (t) {
@@ -396,16 +466,14 @@
       var addBtn = document.getElementById('qv-add');
       if (addBtn && product.tag !== 'Sold Out') {
         addBtn.addEventListener('click', function () {
-          window.CGW.addToBag(product.id, selectedSize);
-          updateBagCount();
-          addBtn.textContent = 'Added ✓';
-          setTimeout(function () { addBtn.textContent = 'Add to Bag'; }, 1200);
+          addProductToBag(product, selectedSize, true); // the bag drawer opening is the confirmation
+          close(); // swap the quick view for the bag rather than stacking them
           if (window.CGW.openBag) window.CGW.openBag();
         });
       }
       var buyBtn = document.getElementById('qv-buy');
       if (buyBtn) buyBtn.addEventListener('click', function () {
-        window.CGW.addToBag(product.id, selectedSize);
+        window.CGW.addToBag(product.id, selectedSize, product);
         window.location.href = 'checkout.html';
       });
     }
@@ -415,13 +483,9 @@
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-add-to-bag]');
       if (!btn || btn.disabled) return;
-      var id = btn.getAttribute('data-add-to-bag');
-      var product = productById(id);
-      var size = (product && product.sizes && product.sizes[0]) || 'One Size';
-      window.CGW.addToBag(id, size);
-      updateBagCount();
-      btn.textContent = 'Added ✓';
-      setTimeout(function () { btn.textContent = 'Add to Bag'; }, 1200);
+      var product = productById(btn.getAttribute('data-add-to-bag'));
+      if (!product) return;
+      addProductToBag(product, (product.sizes && product.sizes[0]) || 'One Size');
     });
   }
 
@@ -443,19 +507,18 @@
 
     var input = wrap.querySelector('#search-input');
     var results = wrap.querySelector('#search-results');
-    function open() { wrap.classList.add('is-open'); setTimeout(function () { input.focus(); }, 60); }
-    function close() { wrap.classList.remove('is-open'); }
+    function open() { loadProducts(); wrap.classList.add('is-open'); syncScrollLock(); setTimeout(function () { input.focus(); }, 60); }
+    function close() { wrap.classList.remove('is-open'); syncScrollLock(); }
     var openBtn = document.getElementById('search-open-btn');
     if (openBtn) openBtn.addEventListener('click', open);
     wrap.querySelector('#search-close').addEventListener('click', close);
     wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 
     input.addEventListener('input', function () {
       var q = input.value.trim().toLowerCase();
       if (!q) { results.innerHTML = '<p class="search-hint">Start typing to find your next favourite fit.</p>'; return; }
       var matches = content.products.filter(function (p) {
-        return (p.name + ' ' + p.category + ' ' + (p.description || '')).toLowerCase().indexOf(q) !== -1;
+        return (p.name + ' ' + (p.category || '') + ' ' + (p.description || '')).toLowerCase().indexOf(q) !== -1;
       });
       if (!matches.length) { results.innerHTML = '<p class="search-hint">No matches — try “dress”, “set” or “top”.</p>'; return; }
       results.innerHTML = matches.map(function (p) {
@@ -518,11 +581,11 @@
       var setOpen = function (open) {
         toggle.setAttribute('aria-expanded', String(open));
         overlay.classList.toggle('is-open', open);
+        syncScrollLock();
       };
       toggle.addEventListener('click', function () { setOpen(true); });
       document.getElementById('menu-close-btn').addEventListener('click', function () { setOpen(false); });
       overlay.addEventListener('click', function (e) { if (e.target === overlay || e.target.closest('.menu-links a')) setOpen(false); });
-      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
     }
     var header = document.getElementById('site-header');
     if (header) {
@@ -532,7 +595,25 @@
     }
   }
 
+  // Swipe rows: stagger their cards in once the row scrolls into view.
+  function wireRails() {
+    var rails = document.querySelectorAll('.rail:not(.will-animate)');
+    if (!rails.length || reduceMotion || !('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { entry.target.classList.add('is-in'); io.unobserve(entry.target); }
+      });
+    }, { threshold: 0.15 });
+    rails.forEach(function (rail) {
+      if (!rail.children.length) return; // filled later; wired on the next call
+      Array.prototype.forEach.call(rail.children, function (c, i) { c.style.setProperty('--i', i); });
+      rail.classList.add('will-animate');
+      io.observe(rail);
+    });
+  }
+
   function wireReveal() {
+    wireRails();
     document.querySelectorAll('.grid, .chip-row').forEach(function (group) {
       group.querySelectorAll(':scope > [data-reveal]').forEach(function (item, i) {
         item.style.setProperty('--reveal-delay', Math.min(i * 70, 350) + 'ms');
@@ -596,6 +677,10 @@
     escapeHtml: escapeHtml,
     logoBadgeHtml: logoBadgeHtml,
     productCardHtml: productCardHtml,
+    products: loadProducts,
+    productById: productById,
+    bagLineProduct: bagLineProduct,
+    toast: toast,
     collectionCardHtml: collectionCardHtml,
     starsHtml: starsHtml,
     isBestseller: isBestseller,
@@ -625,6 +710,7 @@
       wireBackToTop();
       wireLetters();
       updateBagCount();
+      loadProducts();
     }
   };
 })();

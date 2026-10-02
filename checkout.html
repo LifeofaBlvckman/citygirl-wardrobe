@@ -4,15 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout | CityGirl Wardrobe</title>
-<meta name="description" content="Securely check out your CityGirl Wardrobe order. We ship worldwide.">
+<meta name="description" content="Check out your CityGirl Wardrobe order. Lagos delivery in 1–3 days and worldwide shipping.">
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" href="assets/img/logo.png">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/img/logo.png">
+<link rel="apple-touch-icon" href="assets/img/logo-192.png">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;900&family=Montserrat:wght@400;500;600;800&family=Space+Mono&display=swap">
 <link rel="stylesheet" href="assets/css/style.css">
-<!-- Paystack inline. Harmless with no key set; the checkout runs in demo mode
-     until you add a real public key (see PAYSTACK_PUBLIC_KEY in the script). -->
-<script src="https://js.paystack.co/v1/inline.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/js/supabase-config.js"></script>
+<!-- Paystack's script is loaded on demand by the checkout code once a public
+     key is set in assets/js/site-config.js. -->
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/delivery-rates.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -23,13 +27,16 @@
 <main id="main">
   <section class="page-hero" style="padding-block:clamp(36px,5vw,60px);">
     <div class="container">
-      <div class="breadcrumb"><a href="index.html" style="color:#fff;">Home</a> / <a href="shop.html" style="color:#fff;">Shop</a> / Checkout</div>
+      <div class="breadcrumb"><a href="index.html">Home</a> / <a href="shop.html">Shop</a> / Checkout</div>
       <h1 style="font-size:clamp(2rem,5vw,3.4rem);">Checkout</h1>
     </div>
   </section>
 
   <div class="checkout-wrap">
     <div class="container">
+
+      <!-- LOADING (while the live catalogue prices the bag) -->
+      <div id="checkout-loading" class="empty-checkout"><p class="lead">Loading your bag…</p></div>
 
       <!-- EMPTY STATE -->
       <div id="empty-checkout" class="empty-checkout" hidden>
@@ -114,22 +121,12 @@
             <div class="checkout-card">
               <h2>Payment</h2>
               <p class="card-hint">Choose how you'd like to pay.</p>
-              <div class="pay-methods" id="pay-methods">
-                <label class="delivery-option is-selected">
-                  <input type="radio" name="pay" value="paystack" checked>
-                  <span class="opt-main"><b>Pay online now</b><span>Card, bank transfer or USSD — secured by Paystack.</span></span>
-                  <span class="opt-price">Secure</span>
-                </label>
-                <label class="delivery-option">
-                  <input type="radio" name="pay" value="pod">
-                  <span class="opt-main"><b>Pay on delivery</b><span>Place the order now, pay when it arrives. We'll confirm on WhatsApp.</span></span>
-                  <span class="opt-price">₦0 now</span>
-                </label>
-              </div>
+              <div class="pay-methods" id="pay-methods"></div>
               <div class="pay-banner" id="demo-banner" hidden>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                <span><b>Demo mode:</b> no live payment key is set, so paying online is simulated — no card is charged. Add your Paystack public key to take real payments.</span>
+                <span><b>Test mode:</b> paying online is simulated — no card is charged and the order is not saved.</span>
               </div>
+              <div class="pay-banner pay-error" id="order-error" role="alert" hidden></div>
             </div>
 
             <div class="checkout-actions">
@@ -148,6 +145,7 @@
             <div class="summary-line"><span>Delivery</span><span id="sum-delivery">—</span></div>
             <div class="summary-line grand"><span>Total</span><span id="sum-total">₦0</span></div>
           </div>
+          <p class="summary-note" id="removed-note" hidden></p>
           <p class="summary-note">Prices in Nigerian Naira (₦). Taxes included where applicable.</p>
           <div class="trust-row">
             <span class="trust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Secure</span>
@@ -185,6 +183,8 @@
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
 </button>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-config.js"></script>
 <script src="assets/js/store-data.js"></script>
 <script src="assets/js/render.js"></script>
 <script>
@@ -192,96 +192,93 @@
   'use strict';
   CGWRender.init('checkout.html');
   var content = CGWRender.content;
+  var esc = CGWRender.escapeHtml;
   var CGW = window.CGW;
+  var CFG = window.CGW_CONFIG || {};
+  var DELIVERY = window.CGW_DELIVERY;
   var fmt = CGW.formatPrice;
 
   /* =======================================================================
-     PAYMENT + DATABASE INTEGRATION POINTS
+     PAYMENTS
      -----------------------------------------------------------------------
-     1) PAYSTACK: paste your PUBLIC key below (starts with pk_). While it's an
-        empty string the checkout runs in DEMO MODE — the online-payment step
-        is simulated so you can test the full flow without charging a card.
-        The live call to PaystackPop is already wired in payWithPaystack().
-        NOTE: the public key is safe to expose. Your SECRET key must NEVER be
-        in front-end code — verify each payment server-side (see below).
-
-     2) DATABASE: orders are saved via CGW.saveOrder() (see store-data.js),
-        which currently writes to localStorage. To persist real orders, change
-        saveOrderToBackend() below to POST to your API, and verify the Paystack
-        transaction with your SECRET key on that server before marking it paid.
+     • Paystack goes live by setting paystackPublicKey in assets/js/site-config.js
+       and PAYSTACK_SECRET_KEY + SUPABASE_SERVICE_ROLE_KEY in Vercel (see README).
+       Until then "Pay online" shows as coming soon.
+     • An order is only ever marked "paid" by the server (api/paystack-verify.js)
+       after it checks the payment with Paystack. The browser never marks it paid.
+     • Test mode: add ?test=1 to the checkout URL to click through a simulated
+       online payment. Nothing is charged or saved.
      ======================================================================= */
-  var PAYSTACK_PUBLIC_KEY = ''; // e.g. 'pk_live_xxx' or 'pk_test_xxx'
+  var PAYSTACK_KEY = (CFG.paystackPublicKey || '').trim();
+  var TEST_MODE = /[?&]test=1\b/.test(location.search);
+  var ONLINE_ENABLED = !!PAYSTACK_KEY || TEST_MODE;
 
   var COUNTRIES = ['Nigeria','Ghana','Kenya','South Africa','United Kingdom','United States','Canada','Ireland','United Arab Emirates','Germany','France','Netherlands','Australia','Other'];
   var NIGERIAN_STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT - Abuja','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
 
-  var FREE_DELIVERY_THRESHOLD = 50000;
-  // Delivery methods depend on the destination country. Adjust fees to match
-  // your couriers. International is a flat fee here — split by region if needed.
-  function deliveryOptionsFor(country) {
-    if (country === 'Nigeria') {
-      return [
-        { id: 'lagos',  label: 'Lagos delivery',      desc: '1–3 business days · free over ' + fmt(FREE_DELIVERY_THRESHOLD), fee: 2500 },
-        { id: 'nation', label: 'Nationwide delivery',  desc: '3–7 business days, tracked', fee: 5000 },
-        { id: 'pickup', label: 'Pickup in Lagos',      desc: 'Collect from us — we\'ll share the address', fee: 0 }
-      ];
-    }
-    return [
-      { id: 'intl', label: 'Worldwide shipping', desc: '7–14 business days, fully tracked', fee: 45000 }
-    ];
-  }
+  var state = { step: 1, country: 'Nigeria', delivery: 'lagos', payment: ONLINE_ENABLED ? 'online' : 'offline', customer: {}, busy: false };
 
-  var state = { step: 1, country: 'Nigeria', delivery: 'lagos', payment: 'paystack', customer: {} };
+  function currentOptions() { return DELIVERY.optionsFor(state.country); }
+  function currentOption() { return currentOptions().find(function (o) { return o.id === state.delivery; }) || currentOptions()[0]; }
 
-  function currentOptions() { return deliveryOptionsFor(state.country); }
-
-  // ---- Build line items from the bag ----
+  // ---- Line items: always priced from the live catalogue ----
+  var removedNames = [];
   function lineItems() {
     return CGW.getBag().map(function (entry) {
-      var p = content.products.find(function (x) { return x.id === entry.id; });
-      return p ? { id: p.id, name: p.name, price: p.price, image: p.image, size: entry.size, qty: entry.qty, lineTotal: p.price * entry.qty } : null;
+      var p = CGWRender.bagLineProduct(entry);
+      if (!p || p.tag === 'Sold Out') return null;
+      var price = Number(p.price) || 0;
+      return { id: String(p.id), name: p.name, price: price, image: p.image, size: entry.size, qty: entry.qty, lineTotal: price * entry.qty };
     }).filter(Boolean);
   }
   function subtotal(items) { return items.reduce(function (s, i) { return s + i.lineTotal; }, 0); }
-  function deliveryFee(items) {
-    var opt = currentOptions().find(function (o) { return o.id === state.delivery; }) || currentOptions()[0];
-    if (opt.id === 'lagos' && subtotal(items) >= FREE_DELIVERY_THRESHOLD) return 0;
-    return opt.fee;
-  }
+  function deliveryFee(items) { var f = DELIVERY.feeFor(state.country, currentOption().id, subtotal(items)); return f == null ? 0 : f; }
 
-  // ---- Render: which screen ----
-  var items = lineItems();
-  if (!items.length) {
-    document.getElementById('empty-checkout').hidden = false;
-  } else {
+  // Offline payment wording depends on where the order is going.
+  function offlineMethod() {
+    return state.country === 'Nigeria'
+      ? { label: 'Pay on delivery', desc: "Place your order now and pay when it arrives. We'll confirm on WhatsApp.", tag: '₦0 now' }
+      : { label: 'Pay by bank transfer', desc: "Place your order now — we'll send payment details on WhatsApp or email.", tag: 'After order' };
+  }
+  function paymentLabel() { return state.payment === 'online' ? 'Paid online (Paystack)' : offlineMethod().label; }
+
+  // ---- Start: wait for the live catalogue, then decide which screen to show ----
+  CGWRender.products().then(function () {
+    document.getElementById('checkout-loading').hidden = true;
+    var bag = CGW.getBag();
+    removedNames = bag.filter(function (e) { var p = CGWRender.bagLineProduct(e); return !p || p.tag === 'Sold Out'; })
+      .map(function (e) { return e.name || 'An item'; });
+    if (!lineItems().length) {
+      document.getElementById('empty-checkout').hidden = false;
+      return;
+    }
     document.getElementById('checkout-live').hidden = false;
     buildForm();
-    renderDeliveryOptions();
-    renderSummary();
-  }
+    if (removedNames.length) {
+      var note = document.getElementById('removed-note');
+      note.textContent = removedNames.join(', ') + (removedNames.length > 1 ? ' are' : ' is') + ' sold out and was left out of this order.';
+      note.hidden = false;
+    }
+  });
 
   function buildForm() {
-    // Country
     var cs = document.getElementById('c-country');
     cs.innerHTML = COUNTRIES.map(function (c) { return '<option value="' + c + '"' + (c === state.country ? ' selected' : '') + '>' + c + '</option>'; }).join('');
-
-    // Nigerian states
     document.getElementById('c-state').innerHTML = '<option value="">Select a state…</option>' +
       NIGERIAN_STATES.map(function (s) { return '<option value="' + s + '">' + s + '</option>'; }).join('');
+    cs.addEventListener('change', function () { state.country = cs.value; applyCountry(); });
 
-    cs.addEventListener('change', function () {
-      state.country = cs.value;
-      applyCountry();
+    // One listener each (the option lists are re-rendered, the containers are not).
+    document.getElementById('delivery-options').addEventListener('change', function (e) {
+      if (e.target.name !== 'delivery') return;
+      state.delivery = e.target.value;
+      renderDeliveryOptions();
+      renderSummary();
     });
-    applyCountry();
-
-    // Payment method toggle
     document.getElementById('pay-methods').addEventListener('change', function (e) {
       if (e.target.name !== 'pay') return;
       state.payment = e.target.value;
-      document.querySelectorAll('#pay-methods .delivery-option').forEach(function (el) {
-        el.classList.toggle('is-selected', el.querySelector('input').value === state.payment);
-      });
+      renderPayMethods();
       updatePayButton();
     });
 
@@ -290,82 +287,81 @@
     document.querySelectorAll('[data-goto]').forEach(function (b) {
       b.addEventListener('click', function () { setStep(parseInt(b.getAttribute('data-goto'), 10)); });
     });
-
     ['c-name','c-phone','c-email','c-address','c-city','c-country','c-state','c-region'].forEach(function (id) {
       var el = document.getElementById(id);
-      el.addEventListener('input', function () { this.closest('.field').classList.remove('has-error'); });
-      el.addEventListener('change', function () { this.closest('.field').classList.remove('has-error'); });
+      var clear = function () { el.closest('.field').classList.remove('has-error'); };
+      el.addEventListener('input', clear);
+      el.addEventListener('change', clear);
     });
-
-    if (!PAYSTACK_PUBLIC_KEY) document.getElementById('demo-banner').hidden = false;
+    document.getElementById('demo-banner').hidden = !(TEST_MODE && !PAYSTACK_KEY);
+    applyCountry();
   }
 
-  // Swap the state/region field and delivery options when the country changes.
   function applyCountry() {
     var isNG = state.country === 'Nigeria';
     document.getElementById('state-field-ng').hidden = !isNG;
     document.getElementById('state-field-intl').hidden = isNG;
     document.getElementById('delivery-hint').textContent = isNG
-      ? 'Free delivery in Lagos on orders over ' + fmt(FREE_DELIVERY_THRESHOLD) + '.'
+      ? 'Free delivery in Lagos on orders over ' + fmt(DELIVERY.FREE_LAGOS_OVER) + '.'
       : 'Flat-rate worldwide shipping, fully tracked.';
-    // Reset delivery selection to a valid option for this country
     state.delivery = currentOptions()[0].id;
     renderDeliveryOptions();
+    renderPayMethods();
     renderSummary();
   }
 
   function renderDeliveryOptions() {
-    var opts = currentOptions();
-    document.getElementById('delivery-options').innerHTML = opts.map(function (o) {
-      return '<label class="delivery-option' + (o.id === state.delivery ? ' is-selected' : '') + '" data-opt="' + o.id + '">' +
+    var sub = subtotal(lineItems());
+    document.getElementById('delivery-options').innerHTML = currentOptions().map(function (o) {
+      var fee = DELIVERY.feeFor(state.country, o.id, sub);
+      return '<label class="delivery-option' + (o.id === state.delivery ? ' is-selected' : '') + '">' +
         '<input type="radio" name="delivery" value="' + o.id + '"' + (o.id === state.delivery ? ' checked' : '') + '>' +
-        '<span class="opt-main"><b>' + o.label + '</b><span>' + o.desc + '</span></span>' +
-        '<span class="opt-price" data-fee="' + o.id + '"></span>' +
+        '<span class="opt-main"><b>' + esc(o.label) + '</b><span>' + esc(o.desc) + '</span></span>' +
+        '<span class="opt-price">' + (fee === 0 ? 'FREE' : fmt(fee)) + '</span>' +
       '</label>';
     }).join('');
-    document.getElementById('delivery-options').addEventListener('change', function (e) {
-      if (e.target.name !== 'delivery') return;
-      state.delivery = e.target.value;
-      document.querySelectorAll('#delivery-options .delivery-option').forEach(function (el) {
-        el.classList.toggle('is-selected', el.getAttribute('data-opt') === state.delivery);
-      });
-      renderSummary();
-    });
   }
 
-  // ---- Summary ----
+  function renderPayMethods() {
+    if (!ONLINE_ENABLED) state.payment = 'offline';
+    var off = offlineMethod();
+    document.getElementById('pay-methods').innerHTML =
+      '<label class="delivery-option' + (state.payment === 'online' ? ' is-selected' : '') + (ONLINE_ENABLED ? '' : ' is-disabled') + '">' +
+        '<input type="radio" name="pay" value="online"' + (state.payment === 'online' ? ' checked' : '') + (ONLINE_ENABLED ? '' : ' disabled') + '>' +
+        '<span class="opt-main"><b>Pay online now</b><span>Card, bank transfer or USSD — secured by Paystack.</span></span>' +
+        '<span class="opt-price">' + (ONLINE_ENABLED ? 'Secure' : 'Coming soon') + '</span>' +
+      '</label>' +
+      '<label class="delivery-option' + (state.payment === 'offline' ? ' is-selected' : '') + '">' +
+        '<input type="radio" name="pay" value="offline"' + (state.payment === 'offline' ? ' checked' : '') + '>' +
+        '<span class="opt-main"><b>' + off.label + '</b><span>' + off.desc + '</span></span>' +
+        '<span class="opt-price">' + off.tag + '</span>' +
+      '</label>';
+  }
+
   function renderSummary() {
     var items = lineItems();
     var sub = subtotal(items);
     var del = deliveryFee(items);
     document.getElementById('summary-items').innerHTML = items.map(function (i) {
       return '<div class="summary-item">' +
-        '<img src="' + CGWRender.escapeHtml(i.image) + '" alt="" onerror="this.onerror=null;this.src=\'assets/img/product-fallback.jpg\'">' +
-        '<div class="si-info"><h4>' + CGWRender.escapeHtml(i.name) + '</h4><span class="si-qty">Qty ' + i.qty + (i.size && i.size !== 'One Size' ? ' · Size ' + CGWRender.escapeHtml(i.size) : '') + ' · ' + fmt(i.price) + '</span></div>' +
+        '<img src="' + esc(i.image) + '" alt="" onerror="this.onerror=null;this.src=\'assets/img/product-fallback.jpg\'">' +
+        '<div class="si-info"><h4>' + esc(i.name) + '</h4><span class="si-qty">Qty ' + i.qty + (i.size && i.size !== 'One Size' ? ' · Size ' + esc(i.size) : '') + ' · ' + fmt(i.price) + '</span></div>' +
         '<span class="si-price">' + fmt(i.lineTotal) + '</span>' +
       '</div>';
     }).join('');
     document.getElementById('sum-subtotal').textContent = fmt(sub);
     document.getElementById('sum-delivery').textContent = del === 0 ? 'FREE' : fmt(del);
     document.getElementById('sum-total').textContent = fmt(sub + del);
-
-    currentOptions().forEach(function (o) {
-      var el = document.querySelector('[data-fee="' + o.id + '"]');
-      if (!el) return;
-      var fee = (o.id === 'lagos' && sub >= FREE_DELIVERY_THRESHOLD) ? 0 : o.fee;
-      el.textContent = fee === 0 ? 'FREE' : fmt(fee);
-    });
     updatePayButton();
   }
 
   function updatePayButton() {
     var items = lineItems();
-    var total = subtotal(items) + deliveryFee(items);
     var btn = document.getElementById('pay-btn');
-    btn.textContent = state.payment === 'pod' ? 'Place order' : 'Pay ' + fmt(total);
+    if (state.busy) return;
+    btn.textContent = state.payment === 'online' ? 'Pay ' + fmt(subtotal(items) + deliveryFee(items)) : 'Place order';
   }
 
-  // ---- Steps ----
   function setStep(n) {
     state.step = n;
     document.querySelectorAll('.checkout-panel').forEach(function (p) {
@@ -376,38 +372,37 @@
       s.classList.toggle('is-active', sn === n);
       s.classList.toggle('is-done', sn < n);
     });
+    showError('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function regionValue() {
-    return state.country === 'Nigeria' ? val('c-state') : val('c-region');
-  }
+  function val(id) { return document.getElementById(id).value.trim(); }
+  function regionValue() { return state.country === 'Nigeria' ? val('c-state') : val('c-region'); }
 
   function validateDetails() {
     var ok = true;
     function fail(id) { document.getElementById(id).closest('.field').classList.add('has-error'); ok = false; }
     if (val('c-name').length < 2) fail('c-name');
-    if (!/^[0-9+()\-\s]{7,}$/.test(val('c-phone'))) fail('c-phone');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val('c-email'))) fail('c-email');
+    if (!/^\+?[0-9()\-\s]{7,20}$/.test(val('c-phone')) || val('c-phone').replace(/\D/g, '').length < 7) fail('c-phone');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(val('c-email'))) fail('c-email');
     if (val('c-address').length < 4) fail('c-address');
     if (val('c-city').length < 2) fail('c-city');
     if (!val('c-country')) fail('c-country');
     if (state.country === 'Nigeria') { if (!val('c-state')) fail('c-state'); }
-    else { if (val('c-region').length < 2) fail('c-region'); }
+    else if (val('c-region').length < 2) fail('c-region');
     if (!ok) {
       var firstErr = document.querySelector('.field.has-error');
-      if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (firstErr) { firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' }); var inp = firstErr.querySelector('input,select'); if (inp) inp.focus({ preventScroll: true }); }
     }
     return ok;
   }
-  function val(id) { return document.getElementById(id).value.trim(); }
 
   function captureCustomer() {
     state.customer = {
-      name: val('c-name'), phone: val('c-phone'), email: val('c-email'),
-      address: val('c-address'), city: val('c-city'),
-      country: state.country, state: regionValue(),
-      notes: val('c-notes')
+      name: val('c-name').slice(0, 120), phone: val('c-phone').slice(0, 30), email: val('c-email').slice(0, 160),
+      address: val('c-address').slice(0, 240), city: val('c-city').slice(0, 120),
+      country: state.country, state: regionValue().slice(0, 120),
+      notes: val('c-notes').slice(0, 500)
     };
   }
 
@@ -415,105 +410,169 @@
     if (!validateDetails()) return;
     captureCustomer();
     var c = state.customer;
-    var opt = currentOptions().find(function (o) { return o.id === state.delivery; });
     var del = deliveryFee(lineItems());
     document.getElementById('review-contact').textContent = c.name + ' · ' + c.phone + ' · ' + c.email;
     document.getElementById('review-address').textContent = c.address + ', ' + c.city + ', ' + c.state + ', ' + c.country + (c.notes ? ' — ' + c.notes : '');
-    document.getElementById('review-delivery').textContent = opt.label + ' · ' + (del === 0 ? 'FREE' : fmt(del));
+    document.getElementById('review-delivery').textContent = currentOption().label + ' · ' + (del === 0 ? 'FREE' : fmt(del));
     setStep(2);
   }
 
-  // ---- Place order ----
-  function buildOrder(paymentStatus, paymentRef) {
+  // ---- Orders ----
+  function buildOrder() {
     var items = lineItems();
     var sub = subtotal(items), del = deliveryFee(items);
-    var opt = currentOptions().find(function (o) { return o.id === state.delivery; });
+    var customer = Object.assign({}, state.customer, {
+      payment: paymentLabel(),
+      delivery: currentOption().label,
+      deliveryOption: currentOption().id
+    });
     return {
       ref: CGW.generateOrderRef(),
       createdAt: new Date().toISOString(),
-      items: items,
+      items: items.map(function (i) { return { id: i.id, name: i.name, price: i.price, size: i.size, qty: i.qty, image: i.image }; }),
       subtotal: sub,
       deliveryFee: del,
-      deliveryLabel: opt.label,
+      deliveryLabel: currentOption().label,
       total: sub + del,
-      customer: state.customer,
+      customer: customer,
       paymentMethod: state.payment,
-      paymentStatus: paymentStatus,
-      paymentRef: paymentRef || null
+      paymentStatus: 'pending', // only the server can mark an order paid
+      paymentRef: null
     };
   }
 
-  function placeOrder() {
-    captureCustomer();
+  function setBusy(on, text) {
+    state.busy = on;
     var btn = document.getElementById('pay-btn');
-    if (state.payment === 'pod') { finishOrder(buildOrder('pending', null)); return; }
-    btn.disabled = true; btn.textContent = 'Connecting…';
-    if (PAYSTACK_PUBLIC_KEY && window.PaystackPop) {
-      payWithPaystack(btn);
-    } else {
-      setTimeout(function () { finishOrder(buildOrder('paid', 'DEMO-' + Date.now())); }, 900);
-    }
+    btn.disabled = on;
+    if (on) btn.textContent = text; else updatePayButton();
+    document.querySelectorAll('[data-goto]').forEach(function (b) { b.disabled = on; });
   }
 
-  function payWithPaystack(btn) {
-    var items = lineItems();
-    var total = subtotal(items) + deliveryFee(items);
-    var handler = window.PaystackPop.setup({
-      key: PAYSTACK_PUBLIC_KEY,
-      email: state.customer.email,
-      amount: total * 100,            // Paystack expects the amount in kobo
-      currency: 'NGN',
-      metadata: {
-        custom_fields: [
-          { display_name: 'Name', variable_name: 'name', value: state.customer.name },
-          { display_name: 'Phone', variable_name: 'phone', value: state.customer.phone },
-          { display_name: 'Country', variable_name: 'country', value: state.customer.country }
-        ]
-      },
-      callback: function (response) {
-        // IMPORTANT: verify response.reference server-side with your SECRET key
-        // before treating the order as truly paid & fulfilling it.
-        finishOrder(buildOrder('paid', response.reference));
-      },
-      onClose: function () { btn.disabled = false; updatePayButton(); }
+  function showError(html) {
+    var el = document.getElementById('order-error');
+    el.innerHTML = html; el.hidden = !html;
+    if (html) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function whatsappOrderText(order) {
+    return 'Hi CityGirl Wardrobe! I\'d like to place order ' + order.ref + ':\n' +
+      order.items.map(function (i) { return '- ' + i.name + (i.size && i.size !== 'One Size' ? ' (Size ' + i.size + ')' : '') + ' x' + i.qty; }).join('\n') +
+      '\nDelivery: ' + order.deliveryLabel + '\nTotal: ' + fmt(order.total) +
+      '\nPayment: ' + order.customer.payment +
+      '\nName: ' + order.customer.name + '\nPhone: ' + order.customer.phone +
+      '\nAddress: ' + [order.customer.address, order.customer.city, order.customer.state, order.customer.country].join(', ');
+  }
+  function whatsappHref(text) { return 'https://wa.me/' + encodeURIComponent(content.meta.whatsapp) + '?text=' + encodeURIComponent(text); }
+
+  function saveFailed(order) {
+    setBusy(false);
+    showError('<span><b>We couldn\'t place your order just now.</b> Please check your connection and try again — or send it to us on WhatsApp and we\'ll sort it out. ' +
+      '<a class="btn btn-primary btn-sm" style="margin-top:12px;" target="_blank" rel="noopener" href="' + esc(whatsappHref(whatsappOrderText(order))) + '">Send order on WhatsApp</a></span>');
+  }
+
+  function placeOrder() {
+    if (state.busy) return;
+    if (!lineItems().length) { location.reload(); return; }
+    showError('');
+    var order = buildOrder();
+    if (state.payment === 'online') return payOnline(order);
+
+    setBusy(true, 'Placing order…');
+    CGW.saveOrder(order).then(function () { finishOrder(order); }, function (e) {
+      console.error('CityGirl: order not saved', e);
+      saveFailed(order);
     });
-    handler.openIframe();
   }
 
-  // Persist the order (swap for a real backend POST here).
-  function saveOrderToBackend(order) {
-    // e.g. fetch('/api/orders', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(order)})
-    CGW.saveOrder(order); // localStorage stand-in for now
+  // ---- Online payment (Paystack) ----
+  function loadPaystack() {
+    if (window.PaystackPop) return Promise.resolve();
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://js.paystack.co/v1/inline.js';
+      s.onload = resolve; s.onerror = function () { reject(new Error('Could not load Paystack')); };
+      document.head.appendChild(s);
+    });
   }
 
-  function finishOrder(order) {
-    saveOrderToBackend(order);
+  function payOnline(order) {
+    if (TEST_MODE && !PAYSTACK_KEY) {
+      setBusy(true, 'Processing…');
+      setTimeout(function () { order.paymentStatus = 'paid'; order.paymentRef = 'TEST-' + order.ref; finishOrder(order, { test: true }); }, 900);
+      return;
+    }
+    setBusy(true, 'Connecting…');
+    loadPaystack().then(function () {
+      var handler = window.PaystackPop.setup({
+        key: PAYSTACK_KEY,
+        email: order.customer.email,
+        amount: Math.round(order.total * 100), // kobo
+        currency: 'NGN',
+        ref: order.ref,
+        metadata: {
+          order: { items: order.items.map(function (i) { return { id: i.id, size: i.size, qty: i.qty }; }), delivery: order.customer.deliveryOption, customer: order.customer },
+          custom_fields: [
+            { display_name: 'Order', variable_name: 'order_ref', value: order.ref },
+            { display_name: 'Name', variable_name: 'name', value: order.customer.name },
+            { display_name: 'Phone', variable_name: 'phone', value: order.customer.phone }
+          ]
+        },
+        callback: function (response) { confirmPayment(order, response.reference); },
+        onClose: function () { setBusy(false); }
+      });
+      handler.openIframe();
+    }).catch(function () {
+      setBusy(false);
+      showError('<span><b>Online payment couldn\'t load.</b> Check your connection and try again, or choose ' + esc(offlineMethod().label.toLowerCase()) + '.</span>');
+    });
+  }
+
+  // The server checks the payment with Paystack and saves the order as paid.
+  // If it can't be reached, the order is still saved (as pending, with the
+  // Paystack reference) so it is never lost — the owner can match it in Paystack.
+  function confirmPayment(order, reference) {
+    setBusy(true, 'Confirming payment…');
+    order.paymentRef = reference;
+    fetch(CFG.paystackVerifyUrl || '/api/paystack-verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reference: reference, order: order })
+    }).then(function (r) { return r.json().then(function (body) { return { ok: r.ok, body: body }; }); })
+      .then(function (res) {
+        if (res.ok && res.body && res.body.status === 'paid') { order.paymentStatus = 'paid'; return finishOrder(order); }
+        throw new Error((res.body && res.body.error) || 'Payment not confirmed');
+      })
+      .catch(function (e) {
+        console.error('CityGirl: payment verification', e);
+        CGW.saveOrder(order).catch(function () {}).then(function () { finishOrder(order, { unconfirmed: true }); });
+      });
+  }
+
+  function finishOrder(order, opts) {
+    opts = opts || {};
     CGW.clearBag();
     CGWRender.updateBagCount();
-    showConfirmation(order);
+    showConfirmation(order, opts);
   }
 
-  function showConfirmation(order) {
+  function showConfirmation(order, opts) {
     document.getElementById('checkout-live').hidden = true;
     document.getElementById('confirmation').hidden = false;
     document.getElementById('confirm-ref').textContent = order.ref;
-    document.getElementById('confirm-sub').textContent = order.paymentStatus === 'paid'
-      ? 'Your payment went through and your order is confirmed. A receipt is on its way to ' + order.customer.email + '.'
-      : 'Your order is placed. We\'ll confirm delivery and payment details with you on WhatsApp shortly.';
+    var sub = document.getElementById('confirm-sub');
+    if (opts.test) sub.textContent = 'Test order complete — nothing was charged or saved.';
+    else if (opts.unconfirmed) sub.textContent = 'Your payment went through. We\'re confirming it on our side and will be in touch on WhatsApp or email shortly.';
+    else if (order.paymentStatus === 'paid') sub.textContent = 'Your payment went through and your order is confirmed. A receipt is on its way to ' + order.customer.email + '.';
+    else sub.textContent = 'Your order is placed. We\'ll confirm delivery and payment details with you on WhatsApp shortly.';
 
     document.getElementById('confirm-details').innerHTML =
-      '<div class="review-block"><h4>Order total</h4><p>' + fmt(order.total) + ' · ' + order.deliveryLabel +
-        ' · ' + (order.paymentStatus === 'paid' ? 'Paid' : 'Pay on delivery') + '</p></div>' +
-      '<div class="review-block"><h4>Delivering to</h4><p>' + CGWRender.escapeHtml(order.customer.name) + ', ' +
-        CGWRender.escapeHtml(order.customer.address) + ', ' + CGWRender.escapeHtml(order.customer.city) + ', ' +
-        CGWRender.escapeHtml(order.customer.state) + ', ' + CGWRender.escapeHtml(order.customer.country) + '</p></div>' +
+      '<div class="review-block"><h4>Order total</h4><p>' + fmt(order.total) + ' · ' + esc(order.deliveryLabel) + ' · ' + esc(order.paymentStatus === 'paid' ? 'Paid' : order.customer.payment) + '</p></div>' +
+      '<div class="review-block"><h4>Delivering to</h4><p>' + esc([order.customer.name, order.customer.address, order.customer.city, order.customer.state, order.customer.country].join(', ')) + '</p></div>' +
       '<div class="review-block"><h4>Items</h4><p>' + order.items.map(function (i) {
-        return CGWRender.escapeHtml(i.name) + (i.size && i.size !== 'One Size' ? ' (' + CGWRender.escapeHtml(i.size) + ')' : '') + ' ×' + i.qty; }).join(', ') + '</p></div>';
+        return esc(i.name) + (i.size && i.size !== 'One Size' ? ' (' + esc(i.size) + ')' : '') + ' ×' + i.qty; }).join(', ') + '</p></div>';
 
-    var msg = 'Hi CityGirl Wardrobe! I just placed order ' + order.ref + ' (' + fmt(order.total) + ').';
-    document.getElementById('confirm-whatsapp').href =
-      'https://wa.me/' + encodeURIComponent(content.meta.whatsapp) + '?text=' + encodeURIComponent(msg);
-
+    document.getElementById('confirm-whatsapp').href = whatsappHref('Hi CityGirl Wardrobe! I just placed order ' + order.ref + ' (' + fmt(order.total) + ').');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 })();

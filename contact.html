@@ -4,12 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contact Us | CityGirl Wardrobe</title>
-<meta name="description" content="Get in touch with CityGirl Wardrobe on WhatsApp, Instagram or email.">
-<link rel="icon" href="assets/img/logo.png">
+<meta name="description" content="Questions about sizing or an order? Reach CityGirl Wardrobe on WhatsApp, Instagram or email — a real person replies.">
+<link rel="canonical" href="https://citygirlwardrobe-bw-3.vercel.app/contact.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CityGirl Wardrobe">
+<meta property="og:title" content="Contact Us | CityGirl Wardrobe">
+<meta property="og:description" content="Questions about sizing or an order? Reach CityGirl Wardrobe on WhatsApp, Instagram or email — a real person replies.">
+<meta property="og:url" content="https://citygirlwardrobe-bw-3.vercel.app/contact.html">
+<meta property="og:image" content="https://citygirlwardrobe-bw-3.vercel.app/assets/img/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="CityGirl Wardrobe — City Girl Energy. Dressed to Match.">
+<meta property="og:locale" content="en_NG">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Contact Us | CityGirl Wardrobe">
+<meta name="twitter:description" content="Questions about sizing or an order? Reach CityGirl Wardrobe on WhatsApp, Instagram or email — a real person replies.">
+<meta name="twitter:image" content="https://citygirlwardrobe-bw-3.vercel.app/assets/img/og-image.jpg">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/img/logo.png">
+<link rel="apple-touch-icon" href="assets/img/logo-192.png">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;900&family=Montserrat:wght@400;500;600;800&family=Space+Mono&display=swap">
 <link rel="stylesheet" href="assets/css/style.css">
 <noscript><style>[data-reveal]{opacity:1!important;transform:none!important;}</style></noscript>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/js/supabase-config.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -20,7 +38,7 @@
 <main id="main">
   <section class="page-hero">
     <div class="container">
-      <div class="breadcrumb"><a href="index.html" style="color:#fff;">Home</a> / Contact</div>
+      <div class="breadcrumb"><a href="index.html">Home</a> / Contact</div>
       <h1>Let's Chat 💬</h1>
       <p>Questions about sizing, an order, or just want to say hi? We'd love to hear from you.</p>
     </div>
@@ -49,14 +67,14 @@
       <div class="split" data-reveal style="max-width:600px;margin:0 auto;">
         <div style="grid-column:1/-1;">
           <div class="form-success" role="status">
-            <span>Thanks! Your message has been noted — we'll reply on WhatsApp or email soon 💕</span>
+            <span>Your message is ready in WhatsApp — just tap send. Prefer email? <a id="contact-mailto" href="#" style="text-decoration:underline;color:inherit;">Send it by email instead</a>.</span>
           </div>
-          <!-- Front-end only: wire this up to a real form handler/backend before going live -->
-          <form id="contact-form">
-            <div class="field"><label for="name">Your name</label><input type="text" id="name" required></div>
-            <div class="field"><label for="email">Email address</label><input type="email" id="email" required></div>
-            <div class="field"><label for="message">Message</label><textarea id="message" required placeholder="Tell us what you need..."></textarea></div>
-            <button type="submit" class="btn btn-primary btn-block">Send Message</button>
+          <!-- Sends the message through WhatsApp (where the team replies), with email as a fallback. -->
+          <form id="contact-form" novalidate>
+            <div class="field"><label for="name">Your name</label><input type="text" id="name" autocomplete="name" maxlength="120" required><span class="field-error">Please enter your name.</span></div>
+            <div class="field"><label for="email">Email address</label><input type="email" id="email" autocomplete="email" maxlength="160" required><span class="field-error">Enter a valid email address.</span></div>
+            <div class="field"><label for="message">Message</label><textarea id="message" maxlength="2000" required placeholder="Tell us what you need..."></textarea><span class="field-error">Please write a message.</span></div>
+            <button type="submit" class="btn btn-primary btn-block">Send on WhatsApp</button>
           </form>
         </div>
       </div>
@@ -74,6 +92,8 @@
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
 </button>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-config.js"></script>
 <script src="assets/js/store-data.js"></script>
 <script src="assets/js/render.js"></script>
 <script>
@@ -87,10 +107,22 @@
   document.getElementById('contact-email').href = 'mailto:' + content.meta.email;
   document.getElementById('contact-email-label').textContent = content.meta.email;
 
-  document.getElementById('contact-form').addEventListener('submit', function (e) {
+  var form = document.getElementById('contact-form');
+  form.addEventListener('input', function (e) { var f = e.target.closest('.field'); if (f) f.classList.remove('has-error'); });
+  form.addEventListener('submit', function (e) {
     e.preventDefault();
+    var nameEl = document.getElementById('name'), emailEl = document.getElementById('email'), msgEl = document.getElementById('message');
+    var name = nameEl.value.trim(), email = emailEl.value.trim(), message = msgEl.value.trim();
+    var ok = true;
+    function fail(el) { el.closest('.field').classList.add('has-error'); if (ok) el.focus(); ok = false; }
+    if (name.length < 2) fail(nameEl);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) fail(emailEl);
+    if (message.length < 2) fail(msgEl);
+    if (!ok) return;
+    var text = 'Hi CityGirl Wardrobe! ' + message + '\n\n— ' + name + ' (' + email + ')';
+    window.open('https://wa.me/' + encodeURIComponent(content.meta.whatsapp) + '?text=' + encodeURIComponent(text), '_blank', 'noopener');
+    document.getElementById('contact-mailto').href = 'mailto:' + content.meta.email + '?subject=' + encodeURIComponent('Message from ' + name) + '&body=' + encodeURIComponent(message + '\n\n— ' + name + ' (' + email + ')');
     document.querySelector('.form-success').classList.add('visible');
-    e.target.reset();
   });
 
   CGWRender.wireReveal();

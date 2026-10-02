@@ -198,11 +198,12 @@
 
   function saveContent(content) {
     content.version = CONTENT_VERSION;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(content)); }
+    catch (e) { alert('Could not save — this browser\'s storage is full or blocked. Try a smaller image (paste an image URL instead of uploading).'); }
   }
 
   function resetContent() {
-    localStorage.removeItem(STORAGE_KEY);
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
   }
 
   function formatPrice(n) {
@@ -233,8 +234,10 @@
   var SUBS_KEY = 'cgw_subscribers';
   function addSubscriber(email) {
     var subs = getSubscribers();
+    email = String(email || '').trim().toLowerCase();
+    if (!email) return;
     if (subs.indexOf(email) === -1) subs.push(email);
-    localStorage.setItem(SUBS_KEY, JSON.stringify(subs));
+    try { localStorage.setItem(SUBS_KEY, JSON.stringify(subs)); } catch (e) {}
     // Also save to the database when connected (fire-and-forget).
     if (window.CGWDB && window.CGWDB.addSubscriber) {
       try { Promise.resolve(window.CGWDB.addSubscriber(email)).catch(function () {}); } catch (e) {}
@@ -245,30 +248,40 @@
   }
 
   // ---- Bag (cart) ----
-  // Each line is { id, size, qty }. The same product in two sizes is two lines.
+  // Each line is { id, size, qty, name, price, image }. The same product in two
+  // sizes is two lines. name/price/image are a snapshot taken when the item was
+  // added, so the bag still shows it on pages that haven't loaded the live
+  // catalogue yet. Checkout always re-prices from the live catalogue.
   var BAG_KEY = 'cgw_bag';
+  var MAX_QTY = 20;
+  function cleanLine(i) {
+    var qty = Math.max(0, Math.min(MAX_QTY, parseInt(i.qty, 10) || 0));
+    return { id: String(i.id), size: i.size || 'One Size', qty: qty, name: i.name || '', price: Number(i.price) || 0, image: i.image || '' };
+  }
   function getBag() {
     try {
       var bag = JSON.parse(localStorage.getItem(BAG_KEY)) || [];
-      // Backfill size for any legacy entries saved before sizes existed.
-      return bag.map(function (i) { return { id: i.id, size: i.size || 'One Size', qty: i.qty }; });
+      if (!Array.isArray(bag)) return [];
+      return bag.filter(function (i) { return i && i.id != null; }).map(cleanLine).filter(function (i) { return i.qty > 0; });
     } catch (e) { return []; }
   }
   function saveBag(bag) {
-    localStorage.setItem(BAG_KEY, JSON.stringify(bag));
+    try { localStorage.setItem(BAG_KEY, JSON.stringify(bag)); } catch (e) {}
   }
-  function addToBag(productId, size) {
+  function addToBag(productId, size, product) {
     size = size || 'One Size';
     var bag = getBag();
-    var existing = bag.find(function (i) { return i.id === productId && i.size === size; });
-    if (existing) existing.qty += 1;
-    else bag.push({ id: productId, size: size, qty: 1 });
+    var existing = bag.find(function (i) { return i.id === String(productId) && i.size === size; });
+    if (existing) existing.qty = Math.min(MAX_QTY, existing.qty + 1);
+    else existing = bag[bag.push(cleanLine({ id: productId, size: size, qty: 1 })) - 1];
+    if (product) { existing.name = product.name; existing.price = Number(product.price) || 0; existing.image = product.image || ''; }
     saveBag(bag);
     return bag;
   }
   function updateBagQty(productId, size, qty) {
     var bag = getBag().map(function (i) {
-      return (i.id === productId && i.size === size) ? { id: i.id, size: i.size, qty: qty } : i;
+      if (i.id === String(productId) && i.size === size) i.qty = Math.max(0, Math.min(MAX_QTY, qty));
+      return i;
     }).filter(function (i) { return i.qty > 0; });
     saveBag(bag);
     return bag;
@@ -287,20 +300,28 @@
     try { return JSON.parse(localStorage.getItem(ORDERS_KEY)) || []; } catch (e) { return []; }
   }
   function saveOrder(order) {
+    // Keep a local copy (the customer's own order history in this browser).
     var orders = getOrders();
     orders.unshift(order);
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-    // Also save to the database when connected (fire-and-forget).
-    if (window.CGWDB && window.CGWDB.createOrder) {
-      try { Promise.resolve(window.CGWDB.createOrder(order)).catch(function () {}); } catch (e) {}
-    }
-    return order;
+    try { localStorage.setItem(ORDERS_KEY, JSON.stringify(orders.slice(0, 50))); } catch (e) {}
+    // Save to the database. Returns a promise that rejects if the order could
+    // not be stored, so checkout can tell the customer instead of failing silently.
+    if (!(window.CGWDB && window.CGWDB.createOrder)) return Promise.reject(new Error('Store database is not connected'));
+    return Promise.resolve(window.CGWDB.createOrder(order)).then(function (res) {
+      if (res && res.error) throw new Error(res.error.message || 'Order could not be saved');
+      return order;
+    });
   }
   // Human-friendly order reference, e.g. CGW-8F3K2A
   function generateOrderRef() {
     var s = '';
     var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     for (var i = 0; i < 6; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
+    // Avoid Math.random where a secure generator exists (refs double as payment references).
+    if (window.crypto && window.crypto.getRandomValues) {
+      var buf = new Uint32Array(8); window.crypto.getRandomValues(buf); s = '';
+      for (var j = 0; j < 8; j++) s += chars.charAt(buf[j] % chars.length);
+    }
     return 'CGW-' + s;
   }
 

@@ -40,23 +40,29 @@ change, since every page reads content through those two functions.
 
 ## Checkout, payments & orders
 
-`checkout.html` is a real checkout: it reads the bag, collects contact and
-delivery details (with validation), picks a **country** (Nigeria shows state options; anywhere else takes a region + worldwide shipping), shows a live order
-summary, and places an order — ending on a confirmation screen with an order
-reference. Two integration points are already scaffolded and clearly commented:
+`checkout.html` reads the bag, re-prices it from the live product list, collects contact and delivery details (with validation), and places the order.
 
-- **Paystack** — set `PAYSTACK_PUBLIC_KEY` at the top of the checkout script to
-  your public key (`pk_live_…`/`pk_test_…`). While it's empty the checkout runs
-  in **demo mode**: the online-payment step is simulated so you can test the full
-  flow without charging a card. The live `PaystackPop` call is already wired.
-  The public key is safe to expose; your **secret key must stay server-side**, and
-  you should **verify each transaction reference server-side** before fulfilling.
-- **Database** — orders are saved through `CGW.saveOrder()` (in `store-data.js`),
-  which currently writes to `localStorage`. Point `saveOrderToBackend()` in
-  `checkout.html` (and `getOrders()`/`saveOrder()` in `store-data.js`) at your API
-  to persist real orders.
+- **Orders go straight to Supabase.** If an order can't be saved (for example, the customer's connection drops), the customer is told and given a one-tap "Send order on WhatsApp" button. Their bag is kept, so no order is ever lost silently.
+- **Payment today:** *Pay on delivery* (Nigeria) or *Pay by bank transfer* (outside Nigeria). *Pay online* shows as "Coming soon" until Paystack is switched on.
+- **Delivery fees** live in one file, `assets/js/delivery-rates.js`. The checkout and the payment server both read it.
+- **Test mode:** open `checkout.html?test=1` to click through a simulated online payment. Nothing is charged and nothing is saved.
 
-Customers can still order over WhatsApp from the bag drawer as an alternative.
+### Turning on Paystack (when you're ready)
+
+1. In Paystack, copy your **public** key (`pk_live_…`) into `paystackPublicKey` in `assets/js/site-config.js`.
+2. In Vercel, go to Project → Settings → Environment Variables and add:
+   - `PAYSTACK_SECRET_KEY`: your **secret** key (`sk_live_…`). Never put this in any file.
+   - `SUPABASE_URL`: `https://zrhfvphtqpsfihnjwtim.supabase.co`
+   - `SUPABASE_SERVICE_ROLE_KEY`: from Supabase → Project Settings → API. Server only; never put it in any file.
+3. In Paystack, go to Settings → API Keys & Webhooks and set the webhook URL to `https://<your-domain>/api/paystack-webhook`.
+4. Redeploy, then place a small real order to check it arrives in Admin as **paid**.
+
+How it stays safe:
+- The browser never marks an order paid. After Paystack's popup succeeds, `api/paystack-verify.js` asks Paystack whether the payment really went through.
+- The server then re-prices the order from your Supabase prices and saves it as **paid**.
+- If the amount doesn't match, the order is saved as **pending** with a note for you to check before shipping.
+- `api/paystack-webhook.js` does the same check, as a backup for customers who close the page right after paying.
+- The tests in `tests/` cover all of this. Run them with `node --test tests/*.test.js`.
 
 ## Assets
 
@@ -67,17 +73,11 @@ Customers can still order over WhatsApp from the bag drawer as an alternative.
 
 ## Before going live
 
-- Change the admin passcode from the default (`citygirl123`). Note it's a soft,
-  front-end-only lock — real admin security needs a backend login.
-- Replace the WhatsApp number, Instagram handle and email with the real ones.
-- Add your Paystack public key and stand up a small backend to verify payments
-  and store orders.
-- Swap the placeholder product/About images for real photography.
-- If you tested earlier builds in this browser, click **Reset to Sample Data** in
-  Admin (or clear the site's localStorage) so the new monochrome theme and red
-  hero defaults load.
-
----
+- **Run `supabase/production-hardening.sql` once** in Supabase → SQL Editor. It stops anyone outside the store from creating an order that already says "paid".
+- **Custom domain:** if you move off `citygirlwardrobe-bw-3.vercel.app`, find and replace that address in every `.html` file, `robots.txt`, `sitemap.xml` and `assets/js/site-config.js`.
+- **Google:** add the site in Google Search Console and submit `https://<your-domain>/sitemap.xml`.
+- Replace the WhatsApp number, Instagram handle and email in Admin with the real ones, if you haven't already.
+- `admin.html` and `checkout.html` are hidden from search engines (`noindex` and `robots.txt`).
 
 ## Update — Conversion upgrade (v3.1)
 
@@ -124,3 +124,36 @@ The whole site now has a cleaner, simpler shop feel:
 - **Footer:** unchanged — still the black footer with the logo, on every page.
 - **Type:** Helvetica/Arial for headings and text, Montserrat for buttons, Space Mono for the shipping strip.
 - **Removed from the homepage:** the "Why CityGirl" cards, the category chips, the auto-sliding carousel, the bottom newsletter strip and the back-to-top button. The pink pill now covers the newsletter signup.
+
+---
+
+## Update — Production readiness (v3.3)
+
+**Bugs fixed**
+- **Live products in the bag:** live Supabase products disappeared from the bag on other pages, and checkout said "Your bag is empty". The bag now saves a snapshot of each item, and every page loads the live catalogue the same way.
+- **Fake paid orders:** "Pay online" was simulated and saved orders as **paid** without any payment. It's now "Coming soon" until Paystack is set up, and only the server can mark an order paid.
+- **Lost orders:** orders that failed to save still showed a confirmation. The customer now sees an error and a WhatsApp fallback.
+- **Empty shop pages:** "Shop New In" and "Shop Bestsellers" showed an empty page when no products were tagged. They now fall back to the latest pieces.
+- **Shop back button:** the phone's Back button didn't update the shop page after choosing a category. The tab title now follows the category too.
+- **Contact form:** the form pretended to send but sent nothing. It now opens WhatsApp with the message filled in, with an email fallback.
+- **Stacked popups:** popups and drawers could stack on top of each other. The page now stops scrolling behind them, and Escape closes them.
+- **Stock photos:** placeholder photos on About and in the Instagram strip are replaced with the shop's own photos.
+- **Storage errors:** the bag no longer breaks in private browsing or when browser storage is full. Bag quantities are capped at 20 per item.
+- **Newsletter:** emails are stored lower-case, and duplicate signups no longer error.
+
+**SEO:** every page has its own title and description, a canonical link, and Open Graph and Twitter tags. Links shared on WhatsApp, Instagram and X now show a preview with the branded image `assets/img/og-image.jpg`. The homepage also has store details for Google (`ClothingStore` structured data), and the site has `robots.txt`, `sitemap.xml` and a branded `404.html`.
+
+**Speed:** fonts load from the page head instead of a render-blocking `@import`, and the Supabase scripts load at the end of the page.
+
+**Production settings:** `vercel.json` adds security headers and image caching, and marks admin and checkout as no-store and noindex. `.vercelignore` keeps tests, SQL files and docs off the public site.
+
+**Animations:**
+- swipe rows glide in card by card
+- collection photos unveil as you scroll to them
+- the hero settles in with a slow zoom
+- menu links slide in one by one
+- a bag-count pop and an "Added to bag" toast
+- a shine across the pink pill
+- button press feedback and page fade-in
+
+All of these switch off for visitors who reduce motion on their device.
