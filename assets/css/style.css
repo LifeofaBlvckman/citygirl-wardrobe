@@ -8,7 +8,7 @@
    supplies monochrome values so the Admin "theme" switcher stays on-brand.
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;800&family=Space+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;900&family=Montserrat:wght@400;500;600;800&family=Space+Mono&display=swap');
 
 :root {
   color-scheme: light;
@@ -153,10 +153,21 @@ h3, .h3 { font-size: 1.15rem; font-weight: 500; }
   height: var(--header-h); padding-inline: 12px; gap: 8px;
 }
 .nav .nav-toggle { justify-self: start; }
-.nav .brand-name {
-  font-family: var(--font-heading); font-weight: 400; font-size: 1.15rem;
-  letter-spacing: 0; color: var(--color-text); white-space: nowrap;
-}
+.nav .brand-lockup { justify-self: center; }
+.nav .logo-badge.badge-sm { width: 42px; height: 42px; }
+
+
+/* Real logo mark (the supplied circular PNG). badge-sm for the nav, badge-full
+   for roomy spots (newsletter popup, admin login). */
+.logo-badge { border-radius: 50%; flex-shrink: 0; display: block; object-fit: cover; background: #0b0b0b; }
+img.logo-badge { box-shadow: 0 0 0 1px rgba(11,11,11,0.06); }
+.logo-badge.badge-sm { width: 46px; height: 46px; }
+.logo-badge.badge-full { width: 96px; height: 96px; }
+.brand-lockup { display: flex; align-items: center; gap: 13px; }
+.brand-lockup .brand-name { font-family: 'Archivo', var(--font-heading), sans-serif; font-weight: 600; font-size: 1.32rem; letter-spacing: -0.03em; color: var(--color-text); line-height: 1; text-transform: uppercase; }
+.brand-lockup .brand-name span { color: var(--color-text-muted); font-weight: 600; }
+.brand-lockup .brand-name .bn-accent { font-weight: 900; color: inherit; letter-spacing: -0.04em; }
+
 .nav-actions { display: flex; align-items: center; gap: 2px; justify-self: end; }
 .site-header .btn-icon { width: 44px; height: 44px; }
 .bag-btn { position: relative; }
@@ -300,11 +311,13 @@ body.home .site-header { background: transparent; border-bottom-color: rgba(255,
 body.home .site-header .brand-name,
 body.home .site-header .btn-icon { color: #fff; }
 body.home .site-header .bag-count { background: #fff; color: #0b0b0b; }
+body.home .site-header .logo-badge { filter: invert(1); } /* black mark -> white on the photo */
 /* Once scrolled, the header turns solid white again */
 body.home .site-header.is-scrolled { background: #fff; border-bottom-color: var(--brand-border); }
 body.home .site-header.is-scrolled .brand-name,
 body.home .site-header.is-scrolled .btn-icon { color: var(--color-text); }
 body.home .site-header.is-scrolled .bag-count { background: #0b0b0b; color: #fff; }
+body.home .site-header.is-scrolled .logo-badge { filter: none; }
 
 /* ---------- Marquee (shipping strip) ---------- */
 .marquee { overflow: hidden; padding-block: 18px; background: #fff; color: #0b0b0b; }
@@ -326,8 +339,6 @@ body.home .site-header.is-scrolled .bag-count { background: #0b0b0b; color: #fff
 @media (min-width: 1292px) { .rail { padding-inline: calc((100vw - var(--container-w)) / 2 + 26px); scroll-padding-inline: calc((100vw - var(--container-w)) / 2 + 26px); } }
 .rail-products > .product-card { width: clamp(168px, 40vw, 290px); }
 .rail-collections > .collection-card { width: clamp(280px, 85vw, 420px); }
-.rail-reviews > .review-card { width: clamp(260px, 78vw, 360px); }
-.rail-insta > .insta-cell { width: clamp(150px, 40vw, 240px); }
 /* Rails scroll sideways, so skip the fade-in (it would blank cards mid-swipe). */
 .rail [data-reveal] { opacity: 1; transform: none; }
 /* Wider screens: shorter collection cards; a two-card rail splits the row in half. */
@@ -552,22 +563,23 @@ section { padding-block: clamp(56px, 8vw, 96px); }
 .form-success.visible { display: flex; }
 
 /* ---------- Footer ---------- */
-.site-footer { background: #fff; color: var(--color-text); padding-block: 56px 28px; border-top: 1px solid var(--brand-border); }
+.site-footer { background: #0b0b0b; color: #cfcfcf; padding-block: 64px 28px; }
 .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1.2fr; gap: 40px; }
 @media (max-width: 880px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 560px) { .footer-grid { grid-template-columns: 1fr; gap: 32px; } }
-.site-footer h4 { font-size: 0.74rem; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.14em; font-family: var(--font-ui); font-weight: 500; }
-.site-footer p { color: var(--color-text-muted); }
-.footer-brand { display: inline-block; font-size: 1.3rem; margin-bottom: 12px; }
-.footer-links li { margin-bottom: 10px; }
-.footer-links a { color: var(--color-text-muted); transition: color var(--transition); font-size: 0.95rem; }
-.footer-links a:hover { color: var(--color-text); }
+@media (max-width: 560px) { .footer-grid { grid-template-columns: 1fr; } }
+.site-footer h4 { color: #fff; font-size: 0.78rem; margin-bottom: 18px; text-transform: uppercase; letter-spacing: 0.14em; font-family: var(--font-body); font-weight: 700; }
+.site-footer p { color: #9a9a9a; }
+.site-footer .brand-lockup .brand-name { color: #fff; }
+.site-footer .brand-lockup .brand-name span { color: #9a9a9a; }
+.footer-links li { margin-bottom: 11px; }
+.footer-links a { color: #cfcfcf; transition: color var(--transition); font-size: 0.92rem; }
+.footer-links a:hover { color: #fff; }
 .social-row { display: flex; gap: 10px; margin-top: 18px; }
-.social-row a { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--brand-border); display: grid; place-items: center; transition: background var(--transition), color var(--transition); color: var(--color-text); }
-.social-row a:hover { background: #0b0b0b; color: #fff; }
+.social-row a { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.22); display: grid; place-items: center; transition: background var(--transition), color var(--transition), transform var(--transition); color: #fff; }
+.social-row a:hover { background: #fff; color: #0b0b0b; transform: translateY(-2px); }
 .social-row svg { width: 16px; height: 16px; }
-.footer-bottom { border-top: 1px solid var(--brand-border); margin-top: 40px; padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 0.78rem; color: var(--color-text-muted); }
-.footer-bottom a { text-decoration: underline; text-underline-offset: 2px; }
+.footer-bottom { border-top: 1px solid rgba(255,255,255,0.12); margin-top: 44px; padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 0.78rem; color: #7d7d7d; }
+.footer-bottom a { color: #cfcfcf; text-decoration: underline; text-underline-offset: 2px; }
 /* Leave room so the floating discount pill never covers the footer */
 body.has-promo .site-footer { padding-bottom: 110px; }
 
@@ -721,6 +733,7 @@ img, video, iframe { max-width: 100%; }
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   background: #0b0b0b; color: #fff; padding: 18px 13px;
   border-radius: 14px 0 0 14px; text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.28); /* stays visible over the black footer */
   font-family: var(--font-ui); font-size: 0.95rem; letter-spacing: 0.04em;
 }
 .wa-float svg { width: 20px; height: 20px; flex: 0 0 auto; }

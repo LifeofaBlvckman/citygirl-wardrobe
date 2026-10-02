@@ -68,7 +68,9 @@
         '<button class="btn-icon nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">' +
           '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>' +
         '</button>' +
-        '<a href="index.html" class="brand-name">' + escapeHtml(content.meta.brandName) + '</a>' +
+        '<a href="index.html" class="brand-lockup" aria-label="' + escapeHtml(content.meta.brandName) + '">' + logoBadgeHtml('sm') +
+          '<span class="brand-name">CITY<b class="bn-accent">GIRL</b></span>' +
+        '</a>' +
         '<div class="nav-actions">' +
           '<button class="btn-icon" id="search-open-btn" aria-label="Search">' +
             '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.6-4.6"/></svg>' +
@@ -106,7 +108,9 @@
     el.innerHTML =
       '<div class="container footer-grid">' +
         '<div>' +
-          '<a href="index.html" class="footer-brand">' + escapeHtml(content.meta.brandName) + '</a>' +
+          '<a href="index.html" class="brand-lockup" style="margin-bottom:14px;display:inline-flex;">' + logoBadgeHtml('sm') +
+            '<span class="brand-name" style="color:#fff;">CITY<b class="bn-accent">GIRL</b></span>' +
+          '</a>' +
           '<p>' + escapeHtml(content.footer.about) + '</p>' +
           '<div class="social-row">' +
             '<a href="https://instagram.com/' + encodeURIComponent(content.meta.instagram) + '" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1"/></svg></a>' +

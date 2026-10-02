@@ -107,17 +107,18 @@ Customers can still order over WhatsApp from the bag drawer as an alternative.
 
 The whole site now has a cleaner, simpler shop feel:
 
-- **Header:** a menu button on the left, the store name in the middle, and search + bag on the right. The menu slides in from the left. On the homepage the header sits see-through over the hero, then turns white when you scroll. It now stays pinned to the top while you scroll (before, it scrolled away).
+- **Header:** a menu button on the left, the CityGirl logo in the middle, and search + bag on the right. The menu slides in from the left. On the homepage the header sits see-through over the hero (logo shown in white), then turns white when you scroll. It now stays pinned to the top while you scroll (before, it scrolled away).
 - **Homepage:** a full-screen hero with a big plain headline and two stacked pill buttons. Below it, in order:
   - large swipeable **New In / Trending** photo cards with a *View all* link
   - a scrolling **shipping strip**
   - a swipeable **Best Sellers** row
   - **category** photo cards
   - a **New In** row
-  - **Reviews**
-  - the **Instagram** row
+  - the dark sliding **reviews** (*The CityGirls Love Us*) — unchanged
+  - the auto-scrolling **Follow the CityGirl Life** Instagram strip — unchanged
 - **Product cards:** a rounded photo with a round **bag button**, which opens the quick view so the customer picks a size, then the name and price underneath. Tags like *Sale* or *Sold Out* show as a badge on the photo. *New* and *Bestseller* don't show, because the row already says that.
 - **Discount pill:** a pink pill at the bottom (e.g. *10% Off*, taken from the newsletter's discount text in Admin). Tapping it opens the newsletter popup, and **×** hides it for the visit. The popup **no longer opens by itself on a timer**, so Admin's popup delay setting is no longer used. On the homepage the pill shows up once you scroll, and it never shows on checkout.
 - **WhatsApp:** now a slim **Chat** tab on the right edge of the screen.
+- **Footer:** unchanged — still the black footer with the logo, on every page.
 - **Type:** Helvetica/Arial for headings and text, Montserrat for buttons, Space Mono for the shipping strip.
 - **Removed from the homepage:** the "Why CityGirl" cards, the category chips, the auto-sliding carousel, the bottom newsletter strip and the back-to-top button. The pink pill now covers the newsletter signup.
