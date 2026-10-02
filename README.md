@@ -117,7 +117,7 @@ The whole site now has a cleaner, simpler shop feel:
   - the dark sliding **reviews** (*The CityGirls Love Us*) — unchanged
   - the auto-scrolling **Follow the CityGirl Life** Instagram strip — unchanged
 - **Product cards:** a rounded photo with a round **bag button**, which opens the quick view so the customer picks a size, then the name and price underneath. Tags like *Sale* or *Sold Out* show as a badge on the photo. *New* and *Bestseller* don't show, because the row already says that.
-- **Discount pill:** a pink pill at the bottom (e.g. *10% Off*, taken from the newsletter's discount text in Admin). Tapping it opens the newsletter popup, and **×** hides it for the visit. The popup **no longer opens by itself on a timer**, so Admin's popup delay setting is no longer used. On the homepage the pill shows up once you scroll, and it never shows on checkout.
+- **Discount pill:** a pink pill at the bottom of every page except checkout, on phones and desktop (e.g. *10% Off*, taken from the newsletter's discount text in Admin). Tapping it opens the newsletter popup. Tapping **×** or signing up hides it until the browser tab is closed. The popup **no longer opens by itself on a timer**, so Admin's popup delay setting is no longer used.
 - **WhatsApp:** now a slim **Chat** tab on the right edge of the screen.
 - **Footer:** unchanged — still the black footer with the logo, on every page.
 - **Type:** Helvetica/Arial for headings and text, Montserrat for buttons, Space Mono for the shipping strip.

@@ -178,7 +178,7 @@
 
   function renderNewsletterModal() {
     var root = document.getElementById('newsletter-modal-root');
-    if (!root || !content.newsletter.enabled) return;
+    if (!root) return;
     root.innerHTML =
       '<div class="modal-overlay" id="newsletter-overlay">' +
         '<div class="newsletter-modal" id="newsletter-modal">' +
@@ -209,7 +209,8 @@
       localStorage.setItem('cgw_subscribed', '1');
       modal.classList.add('is-success');
       var pill = document.getElementById('promo-pill');
-      if (pill) pill.hidden = true;
+      if (pill) { pill.hidden = true; document.body.classList.remove('has-promo'); }
+      try { sessionStorage.setItem('cgw_promo_closed', '1'); } catch (err) {}
       setTimeout(closeModal, 2200);
     });
   }
@@ -485,14 +486,13 @@
   // ---------- Floating discount pill (opens the newsletter popup) ----------
   function renderPromoPill(activePage) {
     // Keep checkout free of distractions.
-    if (activePage === 'checkout.html' || !content.newsletter.enabled || !window.CGW.openNewsletter) return;
+    if (activePage === 'checkout.html' || !window.CGW.openNewsletter) return;
+    // Shown on every visit; tapping × (or signing up) hides it until the browser tab is closed.
     var dismissed = false;
-    try {
-      dismissed = localStorage.getItem('cgw_subscribed') === '1' || sessionStorage.getItem('cgw_promo_closed') === '1';
-    } catch (e) {}
+    try { dismissed = sessionStorage.getItem('cgw_promo_closed') === '1'; } catch (e) {}
     if (dismissed) return;
     // "10% OFF" -> "10% Off"
-    var label = String(content.newsletter.discountText || '').toLowerCase().replace(/(^|\s)\S/g, function (c) { return c.toUpperCase(); });
+    var label = String(content.newsletter.discountText || '10% Off').toLowerCase().replace(/(^|\s)\S/g, function (c) { return c.toUpperCase(); });
     var wrap = document.createElement('div');
     wrap.className = 'promo-pill';
     wrap.id = 'promo-pill';
@@ -503,16 +503,6 @@
       '</button>';
     document.body.appendChild(wrap);
     document.body.classList.add('has-promo');
-    if (document.body.classList.contains('home')) {
-      wrap.classList.add('is-waiting');
-      var reveal = function () {
-        if (window.scrollY < window.innerHeight * 0.5) return;
-        wrap.classList.remove('is-waiting');
-        window.removeEventListener('scroll', reveal);
-      };
-      window.addEventListener('scroll', reveal, { passive: true });
-      reveal();
-    }
     wrap.querySelector('.promo-pill-btn').addEventListener('click', window.CGW.openNewsletter);
     wrap.querySelector('.promo-pill-close').addEventListener('click', function () {
       wrap.hidden = true;
