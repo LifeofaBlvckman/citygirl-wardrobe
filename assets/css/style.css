@@ -193,7 +193,14 @@ img.logo-badge { box-shadow: 0 0 0 1px rgba(11,11,11,0.06); }
 }
 .menu-overlay.is-open .menu-drawer { transform: translateX(0); }
 .menu-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 10px 24px; border-bottom: 1px solid var(--brand-border); min-height: var(--header-h); }
-.menu-title { font-family: var(--font-ui); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; }
+.menu-home {
+  display: inline-flex; align-items: center; gap: 10px; padding: 10px 0;
+  font-family: var(--font-ui); font-size: 0.85rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--color-text); transition: opacity 200ms ease;
+}
+@media (hover: hover) { .menu-home:hover { opacity: 0.6; } }
+.menu-home span { border-bottom: 1px solid transparent; }
+.menu-home[aria-current="page"] span { border-bottom-color: currentColor; }
 .menu-links { display: flex; flex-direction: column; padding: 8px 0; }
 .menu-links a { padding: 15px 24px; font-size: 1.15rem; border-bottom: 1px solid var(--brand-border); }
 .menu-links a:hover, .menu-links a[aria-current="page"] { background: var(--brand-bg-alt); }

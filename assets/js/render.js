@@ -115,7 +115,7 @@
     var el = document.getElementById('site-header');
     if (!el) return;
     // Shop-first navigation: New In + garment categories + Bestsellers, then About/Contact.
-    var links = [{ href: 'index.html', label: 'Home' }, { href: 'shop.html?filter=new', label: 'New In' }]
+    var links = [{ href: 'shop.html?filter=new', label: 'New In' }]
       .concat(content.categories.map(function (c) { return { href: 'shop.html?cat=' + encodeURIComponent(c), label: c }; }))
       .concat([
         { href: 'shop.html?filter=bestsellers', label: 'Bestsellers' },
@@ -153,7 +153,11 @@
     menu.innerHTML =
       '<nav class="menu-drawer" id="nav-links" aria-label="Primary">' +
         '<div class="menu-head">' +
-          '<span class="menu-title">Menu</span>' +
+          // Home sits in the menu's top-left corner.
+          '<a href="index.html" class="menu-home"' + (activePage === 'index.html' ? ' aria-current="page"' : '') + '>' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>' +
+            '<span>Home</span>' +
+          '</a>' +
           '<button class="btn-icon" id="menu-close-btn" aria-label="Close menu">' +
             '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>' +
           '</button>' +
@@ -598,7 +602,7 @@
       };
       toggle.addEventListener('click', function () { setOpen(true); });
       document.getElementById('menu-close-btn').addEventListener('click', function () { setOpen(false); });
-      overlay.addEventListener('click', function (e) { if (e.target === overlay || e.target.closest('.menu-links a')) setOpen(false); });
+      overlay.addEventListener('click', function (e) { if (e.target === overlay || e.target.closest('.menu-links a, .menu-home')) setOpen(false); });
     }
     // Already on the homepage? "Home" (menu link or logo) scrolls back to the top instead of reloading.
     if (document.body.classList.contains('home')) {
