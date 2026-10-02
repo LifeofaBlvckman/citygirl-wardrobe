@@ -62,23 +62,39 @@
       return '<a href="' + l.href + '"' + (l.href === activePage ? ' aria-current="page"' : '') + '>' + escapeHtml(l.label) + '</a>';
     }).join('');
 
+    // Simple storefront header: menu (left) · brand name (centre) · search + bag (right).
     el.innerHTML =
-      '<div class="container nav">' +
-        '<a href="index.html" class="brand-lockup">' + logoBadgeHtml('sm') +
-          '<span class="brand-name">CITY<b class="bn-accent">GIRL</b></span>' +
-        '</a>' +
-        '<nav class="nav-links" id="nav-links" aria-label="Primary">' + linksHtml + '</nav>' +
+      '<div class="nav">' +
+        '<button class="btn-icon nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">' +
+          '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>' +
+        '</button>' +
+        '<a href="index.html" class="brand-name">' + escapeHtml(content.meta.brandName) + '</a>' +
         '<div class="nav-actions">' +
           '<button class="btn-icon" id="search-open-btn" aria-label="Search">' +
-            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>' +
+            '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.6-4.6"/></svg>' +
           '</button>' +
           '<button class="btn-icon bag-btn" id="bag-open-btn" aria-label="Open bag">' +
-            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>' +
+            '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.3 12.1a1 1 0 0 1-1 .9H6.3a1 1 0 0 1-1-.9z"/><path d="M8.5 10V6.5a3.5 3.5 0 0 1 7 0V10"/></svg>' +
             '<span class="bag-count" id="bag-count" hidden>0</span>' +
           '</button>' +
-          '<button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Toggle menu"><span></span></button>' +
         '</div>' +
       '</div>';
+
+    // Slide-out menu drawer (lives on <body> so it isn't clipped by the header).
+    var menu = document.createElement('div');
+    menu.className = 'menu-overlay';
+    menu.id = 'menu-overlay';
+    menu.innerHTML =
+      '<nav class="menu-drawer" id="nav-links" aria-label="Primary">' +
+        '<div class="menu-head">' +
+          '<span class="menu-title">Menu</span>' +
+          '<button class="btn-icon" id="menu-close-btn" aria-label="Close menu">' +
+            '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>' +
+          '</button>' +
+        '</div>' +
+        '<div class="menu-links">' + linksHtml + '</div>' +
+      '</nav>';
+    document.body.appendChild(menu);
   }
 
   function renderFooter() {
@@ -90,9 +106,7 @@
     el.innerHTML =
       '<div class="container footer-grid">' +
         '<div>' +
-          '<a href="index.html" class="brand-lockup" style="margin-bottom:14px;display:inline-flex;">' + logoBadgeHtml('sm') +
-            '<span class="brand-name" style="color:#fff;">CITY<b class="bn-accent">GIRL</b></span>' +
-          '</a>' +
+          '<a href="index.html" class="footer-brand">' + escapeHtml(content.meta.brandName) + '</a>' +
           '<p>' + escapeHtml(content.footer.about) + '</p>' +
           '<div class="social-row">' +
             '<a href="https://instagram.com/' + encodeURIComponent(content.meta.instagram) + '" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1"/></svg></a>' +
@@ -121,24 +135,40 @@
     if (y) y.textContent = new Date().getFullYear();
   }
 
+  // Badge on the photo: shown for tags like "Sale" or "Sold Out". "New" and
+  // "Bestseller" are skipped — the rails they appear in already say that.
+  function cardBadge(p) {
+    if (!p.tag || p.tag === 'New' || p.tag === 'Bestseller') return '';
+    return '<span class="product-tag" data-tag="' + escapeHtml(p.tag) + '">' + escapeHtml(p.tag) + '</span>';
+  }
+
   function productCardHtml(p) {
     return (
       '<div class="product-card" data-reveal>' +
         '<div class="product-media">' +
-          (p.tag ? '<span class="product-tag" data-tag="' + escapeHtml(p.tag) + '">' + escapeHtml(p.tag) + '</span>' : '') +
-          '<img src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name) + '" data-quickview="' + p.id + '"' + ONERR + '>' +
-          '<button class="quickview-btn" data-quickview="' + p.id + '">Quick view</button>' +
-        '</div>' +
-        '<div class="product-body">' +
-          '<span class="product-cat">' + escapeHtml(p.category) + '</span>' +
-          '<h3 data-quickview="' + p.id + '">' + escapeHtml(p.name) + '</h3>' +
-          (p.rating ? '<div class="card-rating">' + starsHtml(p.rating, 0) + '<span class="rating-count">(' + (p.reviews || 0) + ')</span></div>' : '') +
-          '<span class="product-price">' + window.CGW.formatPrice(p.price) + '</span>' +
-          '<button class="btn btn-primary btn-sm" data-add-to-bag="' + p.id + '"' + (p.tag === 'Sold Out' ? ' disabled style="opacity:.5;cursor:not-allowed;"' : '') + '>' +
-            (p.tag === 'Sold Out' ? 'Sold Out' : 'Add to Bag') +
+          cardBadge(p) +
+          '<img src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name) + '" loading="lazy" data-quickview="' + p.id + '"' + ONERR + '>' +
+          // Opens the quick view so the customer picks a size before it goes in the bag.
+          '<button class="card-bag-btn" data-quickview="' + p.id + '" aria-label="Add ' + escapeHtml(p.name) + ' to bag">' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.3 12.1a1 1 0 0 1-1 .9H6.3a1 1 0 0 1-1-.9z"/><path d="M8.5 10V6.5a3.5 3.5 0 0 1 7 0V10"/></svg>' +
           '</button>' +
         '</div>' +
+        '<div class="product-body">' +
+          '<h3 data-quickview="' + p.id + '">' + escapeHtml(p.name) + '</h3>' +
+          '<span class="product-price">' + window.CGW.formatPrice(p.price) + '</span>' +
+        '</div>' +
       '</div>'
+    );
+  }
+
+  // Large image card with a title and "View all" link (homepage collection rails).
+  function collectionCardHtml(c) {
+    return (
+      '<a class="collection-card" href="' + escapeHtml(c.href) + '">' +
+        '<img src="' + escapeHtml(c.image) + '" alt="" loading="lazy"' + ONERR + '>' +
+        '<span class="collection-text"><span class="collection-title">' + escapeHtml(c.title) + '</span>' +
+        '<span class="collection-link">View all</span></span>' +
+      '</a>'
     );
   }
 
@@ -165,10 +195,8 @@
     var overlay = document.getElementById('newsletter-overlay');
     var modal = document.getElementById('newsletter-modal');
     function openModal() { overlay.classList.add('is-open'); }
-    function closeModal() { overlay.classList.remove('is-open'); sessionStorage.setItem('cgw_newsletter_closed', '1'); }
-    var alreadySubscribed = localStorage.getItem('cgw_subscribed') === '1';
-    var closedThisSession = sessionStorage.getItem('cgw_newsletter_closed') === '1';
-    if (!alreadySubscribed && !closedThisSession) setTimeout(openModal, (content.newsletter.delaySeconds || 2) * 1000);
+    function closeModal() { overlay.classList.remove('is-open'); }
+    window.CGW.openNewsletter = openModal;
     document.getElementById('newsletter-close').addEventListener('click', closeModal);
     overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
     document.getElementById('newsletter-form').addEventListener('submit', function (e) {
@@ -176,6 +204,8 @@
       window.CGW.addSubscriber(e.target.querySelector('input[type="email"]').value);
       localStorage.setItem('cgw_subscribed', '1');
       modal.classList.add('is-success');
+      var pill = document.getElementById('promo-pill');
+      if (pill) pill.hidden = true;
       setTimeout(closeModal, 2200);
     });
   }
@@ -434,7 +464,7 @@
     results.addEventListener('click', function (e) { if (e.target.closest('[data-quickview]')) close(); });
   }
 
-  // ---------- Floating WhatsApp button ----------
+  // ---------- WhatsApp side tab ----------
   function renderWhatsAppFloat() {
     var a = document.createElement('a');
     a.className = 'wa-float';
@@ -444,19 +474,61 @@
     a.setAttribute('aria-label', 'Chat with CityGirl on WhatsApp');
     a.innerHTML =
       '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm5.6 14.2c-.2.6-1.4 1.2-1.9 1.3-.5.1-1.1.2-3.5-.8-2.9-1.2-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5.2.6.7 1.9.8 2 .1.2.1.4 0 .6-.1.2-.2.4-.4.6l-.5.6c-.2.2-.3.4-.1.7.2.3.9 1.4 1.9 2.3 1.3 1.2 2.4 1.5 2.7 1.7.3.2.5.1.7-.1l.9-1c.2-.3.4-.2.7-.1l1.8.9c.2.1.4.2.5.3.1.2.1.9-.1 1.5Z"/></svg>' +
-      '<span class="wa-float-label">Chat with CityGirl</span>';
+      '<span class="wa-float-label">Chat</span>';
     document.body.appendChild(a);
+  }
+
+  // ---------- Floating discount pill (opens the newsletter popup) ----------
+  function renderPromoPill(activePage) {
+    // Keep checkout free of distractions.
+    if (activePage === 'checkout.html' || !content.newsletter.enabled || !window.CGW.openNewsletter) return;
+    var dismissed = false;
+    try {
+      dismissed = localStorage.getItem('cgw_subscribed') === '1' || sessionStorage.getItem('cgw_promo_closed') === '1';
+    } catch (e) {}
+    if (dismissed) return;
+    // "10% OFF" -> "10% Off"
+    var label = String(content.newsletter.discountText || '').toLowerCase().replace(/(^|\s)\S/g, function (c) { return c.toUpperCase(); });
+    var wrap = document.createElement('div');
+    wrap.className = 'promo-pill';
+    wrap.id = 'promo-pill';
+    wrap.innerHTML =
+      '<button class="promo-pill-btn" type="button">' + escapeHtml(label) + '</button>' +
+      '<button class="promo-pill-close" type="button" aria-label="Dismiss offer">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>' +
+      '</button>';
+    document.body.appendChild(wrap);
+    document.body.classList.add('has-promo');
+    if (document.body.classList.contains('home')) {
+      wrap.classList.add('is-waiting');
+      var reveal = function () {
+        if (window.scrollY < window.innerHeight * 0.5) return;
+        wrap.classList.remove('is-waiting');
+        window.removeEventListener('scroll', reveal);
+      };
+      window.addEventListener('scroll', reveal, { passive: true });
+      reveal();
+    }
+    wrap.querySelector('.promo-pill-btn').addEventListener('click', window.CGW.openNewsletter);
+    wrap.querySelector('.promo-pill-close').addEventListener('click', function () {
+      wrap.hidden = true;
+      document.body.classList.remove('has-promo');
+      try { sessionStorage.setItem('cgw_promo_closed', '1'); } catch (e) {}
+    });
   }
 
   function wireNav() {
     var toggle = document.querySelector('.nav-toggle');
-    var links = document.querySelector('.nav-links');
-    if (toggle && links) {
-      toggle.addEventListener('click', function () {
-        var open = toggle.getAttribute('aria-expanded') === 'true';
-        toggle.setAttribute('aria-expanded', String(!open));
-        links.classList.toggle('open', !open);
-      });
+    var overlay = document.getElementById('menu-overlay');
+    if (toggle && overlay) {
+      var setOpen = function (open) {
+        toggle.setAttribute('aria-expanded', String(open));
+        overlay.classList.toggle('is-open', open);
+      };
+      toggle.addEventListener('click', function () { setOpen(true); });
+      document.getElementById('menu-close-btn').addEventListener('click', function () { setOpen(false); });
+      overlay.addEventListener('click', function (e) { if (e.target === overlay || e.target.closest('.menu-links a')) setOpen(false); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
     }
     var header = document.getElementById('site-header');
     if (header) {
@@ -498,6 +570,7 @@
     escapeHtml: escapeHtml,
     logoBadgeHtml: logoBadgeHtml,
     productCardHtml: productCardHtml,
+    collectionCardHtml: collectionCardHtml,
     starsHtml: starsHtml,
     isBestseller: isBestseller,
     waLink: waLink,
@@ -519,6 +592,7 @@
       renderQuickView();
       renderSearch();
       renderWhatsAppFloat();
+      renderPromoPill(activePage);
       wireAddToBag();
       wireNav();
       wireBackToTop();
