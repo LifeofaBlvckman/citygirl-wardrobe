@@ -600,6 +600,15 @@
       document.getElementById('menu-close-btn').addEventListener('click', function () { setOpen(false); });
       overlay.addEventListener('click', function (e) { if (e.target === overlay || e.target.closest('.menu-links a')) setOpen(false); });
     }
+    // Already on the homepage? "Home" (menu link or logo) scrolls back to the top instead of reloading.
+    if (document.body.classList.contains('home')) {
+      document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href="index.html"]');
+        if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+      });
+    }
     var header = document.getElementById('site-header');
     if (header) {
       var setState = function () { header.classList.toggle('is-scrolled', window.scrollY > 12); };

@@ -39,7 +39,23 @@
   <section class="page-hero">
     <div class="container">
       <div class="breadcrumb"><a href="index.html">Home</a> / <span id="shop-crumb">Shop</span></div>
-      <h1 id="shop-title">Shop All</h1>
+      <h1 id="shop-title" style="visibility:hidden">Shop All</h1>
+      <script>
+        // Show the right heading straight away — it stays hidden until it holds the
+        // page you picked, so "Shop All" never flashes (the rest of the page waits
+        // for scripts to download).
+        (function () {
+          var q = new URLSearchParams(location.search), f = q.get('filter'), c = q.get('cat');
+          var label = f === 'new' ? 'New In' : f === 'bestsellers' ? 'Bestsellers' : (c || '');
+          var h = document.getElementById('shop-title');
+          if (label) {
+            h.textContent = label;
+            var crumb = document.getElementById('shop-crumb'); if (crumb) crumb.textContent = label;
+          }
+          h.style.visibility = '';
+        })();
+      </script>
+      <noscript><style>#shop-title{visibility:visible!important}</style></noscript>
       <p>Browse the full CityGirl Wardrobe collection and find your next favourite fit.</p>
     </div>
   </section>
@@ -119,7 +135,8 @@
   function setHeading(view) {
     var h = document.getElementById('shop-title');
     var crumb = document.getElementById('shop-crumb');
-    if (h) { h.textContent = view.key === 'All' ? 'Shop All' : view.label; CGWRender.animateLetters(h); }
+    var heading = view.key === 'All' ? 'Shop All' : view.label;
+    if (h && h.textContent !== heading) { h.textContent = heading; CGWRender.animateLetters(h); }
     if (crumb) crumb.textContent = view.key === 'All' ? 'Shop' : view.label;
     document.title = (view.key === 'All' ? 'Shop Dresses, Gowns & Sets' : 'Shop ' + view.label) + ' | CityGirl Wardrobe';
   }
