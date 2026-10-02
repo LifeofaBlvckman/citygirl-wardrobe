@@ -1,8 +1,8 @@
 # CityGirl Wardrobe
 User-agent: *
 Allow: /
-Disallow: /admin.html
-Disallow: /checkout.html
+Disallow: /admin
+Disallow: /checkout
 Disallow: /api/
 
 Sitemap: https://citygirlwardrobe-bw-3.vercel.app/sitemap.xml

@@ -115,7 +115,7 @@
     var el = document.getElementById('site-header');
     if (!el) return;
     // Shop-first navigation: New In + garment categories + Bestsellers, then About/Contact.
-    var links = [{ href: 'shop.html?filter=new', label: 'New In' }]
+    var links = [{ href: 'index.html', label: 'Home' }, { href: 'shop.html?filter=new', label: 'New In' }]
       .concat(content.categories.map(function (c) { return { href: 'shop.html?cat=' + encodeURIComponent(c), label: c }; }))
       .concat([
         { href: 'shop.html?filter=bestsellers', label: 'Bestsellers' },
@@ -329,6 +329,7 @@
               '<button data-qty-id="' + escapeHtml(li.product.id) + '" data-qty-size="' + escapeHtml(li.size) + '" data-delta="-1" aria-label="Decrease quantity">−</button>' +
               '<span>' + li.qty + '</span>' +
               '<button data-qty-id="' + escapeHtml(li.product.id) + '" data-qty-size="' + escapeHtml(li.size) + '" data-delta="1" aria-label="Increase quantity">+</button>' +
+              '<button class="bag-remove" data-remove-id="' + escapeHtml(li.product.id) + '" data-remove-size="' + escapeHtml(li.size) + '" aria-label="Remove ' + escapeHtml(li.product.name) + ' from bag">Remove</button>' +
             '</div>' +
           '</div>' +
         '</div>'
@@ -344,8 +345,20 @@
       '<div class="bag-subtotal"><span>Subtotal</span><span>' + window.CGW.formatPrice(subtotal) + '</span></div>' +
       '<a href="checkout.html" class="btn btn-primary btn-block">Proceed to Checkout</a>' +
       '<a href="' + waLink(waMessage) + '" target="_blank" rel="noopener" class="bag-secondary">Or order on WhatsApp</a>' +
-      '<p class="text-muted" style="font-size:0.76rem;margin:12px 0 0;text-align:center;">Delivery is calculated at checkout.</p>';
+      '<p class="text-muted" style="font-size:0.76rem;margin:12px 0 0;text-align:center;">Delivery is calculated at checkout.</p>' +
+      '<button class="bag-clear" id="bag-clear-btn" type="button">Clear bag</button>';
 
+    itemsEl.querySelectorAll('[data-remove-id]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        window.CGW.updateBagQty(btn.getAttribute('data-remove-id'), btn.getAttribute('data-remove-size'), 0);
+        renderBagContents();
+      });
+    });
+    document.getElementById('bag-clear-btn').addEventListener('click', function () {
+      if (!window.confirm('Remove everything from your bag?')) return;
+      window.CGW.clearBag();
+      renderBagContents();
+    });
     itemsEl.querySelectorAll('[data-qty-id]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var id = btn.getAttribute('data-qty-id');

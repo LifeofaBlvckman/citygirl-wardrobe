@@ -97,6 +97,7 @@
               <a href="shop.html" class="link-back">← Continue shopping</a>
               <button class="btn btn-primary" id="to-review-btn">Continue to Review</button>
             </div>
+            <div class="checkout-cancel"><button class="link-back" type="button" data-cancel-order>Cancel order</button></div>
           </section>
 
           <!-- STEP 2: REVIEW & PAY -->
@@ -133,6 +134,7 @@
               <button class="link-back" data-goto="1">← Back to details</button>
               <button class="btn btn-primary" id="pay-btn">Pay ₦0</button>
             </div>
+            <div class="checkout-cancel"><button class="link-back" type="button" data-cancel-order>Cancel order</button></div>
           </section>
         </div>
 
@@ -248,10 +250,7 @@
     var bag = CGW.getBag();
     removedNames = bag.filter(function (e) { var p = CGWRender.bagLineProduct(e); return !p || p.tag === 'Sold Out'; })
       .map(function (e) { return e.name || 'An item'; });
-    if (!lineItems().length) {
-      document.getElementById('empty-checkout').hidden = false;
-      return;
-    }
+    if (!lineItems().length) { showEmpty(); return; }
     document.getElementById('checkout-live').hidden = false;
     buildForm();
     if (removedNames.length) {
@@ -260,6 +259,12 @@
       note.hidden = false;
     }
   });
+
+  function showEmpty() {
+    document.getElementById('checkout-live').hidden = true;
+    document.getElementById('empty-checkout').hidden = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   function buildForm() {
     var cs = document.getElementById('c-country');
@@ -283,6 +288,29 @@
     });
 
     document.getElementById('to-review-btn').addEventListener('click', goToReview);
+
+    // Remove a single item from the order summary.
+    document.getElementById('summary-items').addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-si-remove]');
+      if (!btn || state.busy) return;
+      CGW.updateBagQty(btn.getAttribute('data-si-remove'), btn.getAttribute('data-si-size'), 0);
+      CGWRender.updateBagCount();
+      if (!lineItems().length) { showEmpty(); return; }
+      renderDeliveryOptions();
+      renderSummary();
+      if (state.step === 2) goToReview();
+    });
+
+    // Cancel the whole order: empties the bag and goes back to the shop.
+    document.querySelectorAll('[data-cancel-order]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (state.busy) return;
+        if (!window.confirm('Cancel this order and empty your bag?')) return;
+        CGW.clearBag();
+        CGWRender.updateBagCount();
+        location.href = 'shop.html';
+      });
+    });
     document.getElementById('pay-btn').addEventListener('click', placeOrder);
     document.querySelectorAll('[data-goto]').forEach(function (b) {
       b.addEventListener('click', function () { setStep(parseInt(b.getAttribute('data-goto'), 10)); });
@@ -346,7 +374,8 @@
       return '<div class="summary-item">' +
         '<img src="' + esc(i.image) + '" alt="" onerror="this.onerror=null;this.src=\'assets/img/product-fallback.jpg\'">' +
         '<div class="si-info"><h4>' + esc(i.name) + '</h4><span class="si-qty">Qty ' + i.qty + (i.size && i.size !== 'One Size' ? ' · Size ' + esc(i.size) : '') + ' · ' + fmt(i.price) + '</span></div>' +
-        '<span class="si-price">' + fmt(i.lineTotal) + '</span>' +
+        '<div class="si-side"><span class="si-price">' + fmt(i.lineTotal) + '</span>' +
+        '<button type="button" class="si-remove" data-si-remove="' + esc(i.id) + '" data-si-size="' + esc(i.size) + '" aria-label="Remove ' + esc(i.name) + '">Remove</button></div>' +
       '</div>';
     }).join('');
     document.getElementById('sum-subtotal').textContent = fmt(sub);

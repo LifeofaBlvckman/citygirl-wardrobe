@@ -1010,3 +1010,26 @@ main { animation: page-in 500ms ease both; }
 
 /* Keyboard focus that stays visible on dark and light backgrounds */
 .card-bag-btn:focus-visible, .promo-pill-btn:focus-visible, .collection-card:focus-visible { outline: 2px solid #0b0b0b; outline-offset: 3px; box-shadow: 0 0 0 5px #fff; }
+
+/* Remove / clear / cancel controls */
+.bag-remove, .si-remove, .bag-clear {
+  background: none; border: none; padding: 4px 0; margin: 0;
+  font-family: var(--font-ui); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--color-text-muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.bag-qty .bag-remove { margin-left: auto; width: auto; height: auto; border: none; border-radius: 0; background: none; font-weight: 500; }
+.bag-qty .bag-remove:hover, .si-remove:hover, .bag-clear:hover { color: var(--signal); background: none; }
+.bag-clear { display: block; margin: 14px auto 0; }
+.summary-item .si-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.checkout-cancel { text-align: center; margin-top: 18px; }
+.checkout-cancel .link-back { color: var(--color-text-muted); font-weight: 500; }
+.checkout-cancel .link-back:hover { color: var(--signal); }
+/* Phones: full-width checkout button with the back link underneath */
+@media (max-width: 560px) {
+  .checkout-actions { flex-direction: column-reverse; align-items: stretch; gap: 6px; }
+  .checkout-actions .btn { width: 100%; white-space: normal; }
+  .checkout-actions .link-back { text-align: center; }
+}
+/* Small phones: let the checkout column shrink to the screen, and long buttons wrap */
+@media (max-width: 940px) { .checkout-grid { grid-template-columns: minmax(0, 1fr); } .checkout-grid > * { min-width: 0; } }
+@media (max-width: 420px) { .btn { white-space: normal; text-align: center; } .checkout-card { padding: 20px 16px; } }
