@@ -1040,3 +1040,50 @@ main { animation: page-in 500ms ease both; }
 /* Small phones: let the checkout column shrink to the screen, and long buttons wrap */
 @media (max-width: 940px) { .checkout-grid { grid-template-columns: minmax(0, 1fr); } .checkout-grid > * { min-width: 0; } }
 @media (max-width: 420px) { .btn { white-space: normal; text-align: center; } .checkout-card { padding: 20px 16px; } }
+
+/* ---------- My Orders ---------- */
+.orders-list { display: grid; gap: 20px; }
+.orders-empty { text-align: center; padding: 40px 0 10px; }
+.order-card { border: 1px solid var(--brand-border); border-radius: 12px; padding: clamp(18px, 3vw, 28px); background: #fff; }
+.order-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid var(--brand-border); }
+.order-ref { display: block; font-family: var(--font-mono); font-size: 1rem; letter-spacing: 0.04em; }
+.order-date { display: block; color: var(--color-text-muted); font-size: 0.85rem; margin-top: 2px; }
+.order-status { max-width: 320px; }
+.order-status-badge {
+  display: inline-block; font-family: var(--font-ui); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 6px 12px; border-radius: var(--radius-full); background: var(--brand-bg-alt); color: #0b0b0b;
+}
+.order-status-badge[data-status="paid"], .order-status-badge[data-status="shipped"] { background: #0b0b0b; color: #fff; }
+.order-status-badge[data-status="cancelled"] { background: #fff; color: var(--signal); border: 1px solid var(--signal); }
+.order-status-note { margin: 8px 0 0; font-size: 0.85rem; color: var(--color-text-muted); }
+.order-items { list-style: none; margin: 0; padding: 8px 0; }
+.order-items li { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--brand-border); }
+.order-items img { width: 56px; height: 72px; object-fit: cover; border-radius: 6px; background: var(--brand-bg-alt); flex: 0 0 auto; }
+.order-items .oi-name { flex: 1; display: flex; flex-direction: column; }
+.order-items .oi-name small { color: var(--color-text-muted); font-size: 0.8rem; margin-top: 2px; }
+.order-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px 24px; margin: 16px 0 20px; }
+.order-meta dt { font-family: var(--font-ui); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 4px; }
+.order-meta dd { margin: 0; font-size: 0.95rem; }
+.order-lookup { margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--brand-border); max-width: 720px; }
+.order-lookup h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin-bottom: 6px; }
+.lookup-result { margin-top: 16px; padding: 14px 16px; background: var(--brand-bg-alt); border-radius: 8px; }
+.lookup-result a { text-decoration: underline; }
+.bag-orders-link { display: inline-block; margin-top: 14px; color: var(--color-text); text-decoration: underline; text-underline-offset: 3px; font-weight: 500; }
+
+/* Homepage "Your recent order" card */
+.recent-order { padding-block: 20px 0; }
+.recent-order-card {
+  display: flex; align-items: center; gap: 16px; padding: 14px 16px;
+  border: 1px solid var(--brand-border); border-radius: 12px; background: #fff;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.recent-order-card:hover { border-color: #0b0b0b; box-shadow: var(--shadow-sm); }
+.recent-order-card img { width: 52px; height: 66px; object-fit: cover; border-radius: 6px; background: var(--brand-bg-alt); flex: 0 0 auto; }
+.recent-order-card .ro-text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.ro-kicker { font-family: var(--font-ui); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-muted); }
+.ro-title { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ro-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ro-ref { font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-text-muted); }
+.ro-link { flex: 0 0 auto; display: grid; place-items: center; transition: transform var(--transition); }
+.recent-order-card:hover .ro-link { transform: translateX(3px); }
+.recent-order-card.container { width: calc(100% - 52px); max-width: calc(var(--container-w) - 52px); padding-inline: 16px; }

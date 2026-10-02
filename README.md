@@ -157,3 +157,10 @@ The whole site now has a cleaner, simpler shop feel:
 - button press feedback and page fade-in
 
 All of these switch off for visitors who reduce motion on their device.
+
+**My Orders (v3.4).** Customers now have a **My Orders** page (`orders.html`, also at `/orders`). It's linked from the menu, the footer, the order confirmation and the empty bag, and the homepage shows a "Your recent order" card for 60 days after an order.
+- The page lists the orders placed on that phone or computer, with the items, total, delivery details and an "Ask about this order" WhatsApp button.
+- **Live status** (Order placed → Paid → On its way → Cancelled) follows what you set in Admin → Sales, once you've run **`supabase/order-status.sql`** once in Supabase → SQL Editor. Until then, orders show as "Order placed".
+- **Find an order:** customers can look up an order placed on another phone with the order number plus the email they used. Nobody can see anyone else's orders.
+
+**Caching:** every script and style link carries `?v=…`. Bump that version string in all `.html` files whenever you change CSS or JS, so browsers fetch the new files straight away.

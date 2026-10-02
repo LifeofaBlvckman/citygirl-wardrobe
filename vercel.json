@@ -97,6 +97,10 @@
     {
       "source": "/checkout",
       "destination": "/checkout.html"
+    },
+    {
+      "source": "/orders",
+      "destination": "/orders.html"
     }
   ]
 }

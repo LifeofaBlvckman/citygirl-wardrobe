@@ -56,6 +56,21 @@
     return productById(line.id) || (line.name ? { id: line.id, name: line.name, price: line.price, image: line.image } : null);
   }
 
+  // ---------- Orders: status shown to customers ----------
+  var ORDER_STATUS = {
+    pending:   { label: 'Order placed', note: "We'll confirm delivery and payment with you on WhatsApp." },
+    paid:      { label: 'Paid · being prepared', note: 'Your payment is confirmed and your order is being prepared.' },
+    shipped:   { label: 'On its way', note: 'Your order has left us and is on its way to you.' },
+    cancelled: { label: 'Cancelled', note: "This order was cancelled. Message us on WhatsApp if that's unexpected." }
+  };
+  function orderStatusInfo(status) { return ORDER_STATUS[status] || ORDER_STATUS.pending; }
+  // Latest status from the shop (needs supabase/order-status.sql); falls back to what we knew at checkout.
+  function fetchOrderStatus(order) {
+    var fallback = order.paymentStatus === 'paid' ? 'paid' : 'pending';
+    if (!(window.CGWDB && window.CGWDB.orderStatus && order.customer && order.customer.email)) return Promise.resolve(fallback);
+    return window.CGWDB.orderStatus(order.ref, order.customer.email).then(function (s) { return s || fallback; }, function () { return fallback; });
+  }
+
   // ---------- Overlays: one scroll lock + Escape to close ----------
   var OVERLAYS = '.modal-overlay.is-open, .bag-drawer-overlay.is-open, .menu-overlay.is-open, .search-overlay.is-open';
   function syncScrollLock() {
@@ -120,7 +135,8 @@
       .concat([
         { href: 'shop.html?filter=bestsellers', label: 'Bestsellers' },
         { href: 'about.html', label: 'About' },
-        { href: 'contact.html', label: 'Contact' }
+        { href: 'contact.html', label: 'Contact' },
+        { href: 'orders.html', label: 'My Orders' }
       ]);
     var linksHtml = links.map(function (l) {
       return '<a href="' + l.href + '"' + (l.href === activePage ? ' aria-current="page"' : '') + '>' + escapeHtml(l.label) + '</a>';
@@ -191,7 +207,7 @@
         '</ul></div>' +
         '<div><h4>Quick Links</h4><ul class="footer-links">' +
           '<li><a href="index.html">Home</a></li><li><a href="about.html">About Us</a></li>' +
-          '<li><a href="contact.html">Contact</a></li>' +
+          '<li><a href="contact.html">Contact</a></li><li><a href="orders.html">My Orders</a></li>' +
         '</ul></div>' +
         '<div><h4>Get In Touch</h4><ul class="footer-links">' +
           '<li><a href="mailto:' + escapeHtml(content.meta.email) + '">' + escapeHtml(content.meta.email) + '</a></li>' +
@@ -316,7 +332,8 @@
     }).filter(Boolean);
 
     if (!lineItems.length) {
-      itemsEl.innerHTML = '<div class="bag-empty">Your bag is empty.<br>Let\'s find you something cute.</div>';
+      itemsEl.innerHTML = '<div class="bag-empty">Your bag is empty.<br>Let\'s find you something cute.' +
+        (window.CGW.getOrders().length ? '<br><a class="bag-orders-link" href="orders.html">View my orders</a>' : '') + '</div>';
       footerEl.innerHTML = '';
       updateBagCount();
       return;
@@ -707,6 +724,8 @@
     productById: productById,
     bagLineProduct: bagLineProduct,
     toast: toast,
+    orderStatusInfo: orderStatusInfo,
+    fetchOrderStatus: fetchOrderStatus,
     collectionCardHtml: collectionCardHtml,
     starsHtml: starsHtml,
     isBestseller: isBestseller,

@@ -61,6 +61,14 @@
       });
     },
 
+    // ---- Order status for customers (needs supabase/order-status.sql) ----
+    // Resolves to 'pending' | 'paid' | 'shipped' | 'cancelled', or null if not found / not set up.
+    orderStatus: function (ref, email) {
+      return sb.rpc('order_status', { p_ref: ref, p_email: email })
+        .then(function (res) { return (!res.error && res.data && res.data[0]) ? res.data[0].status : null; },
+              function () { return null; });
+    },
+
     // ---- Newsletter (write) ----
     addSubscriber: function (email) {
       // ignoreDuplicates → ON CONFLICT DO NOTHING, which only needs the insert policy.

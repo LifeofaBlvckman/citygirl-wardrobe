@@ -3,6 +3,7 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /checkout
+Disallow: /orders
 Disallow: /api/
 
 Sitemap: https://citygirlwardrobe-bw-3.vercel.app/sitemap.xml

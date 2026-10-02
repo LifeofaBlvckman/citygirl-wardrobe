@@ -26,7 +26,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;900&family=Montserrat:wght@400;500;600;800&family=Space+Mono&display=swap">
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css?v=20261002c">
 <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "ClothingStore", "@id": "https://citygirlwardrobe-bw-3.vercel.app/#store", "name": "CityGirl Wardrobe", "url": "https://citygirlwardrobe-bw-3.vercel.app/", "logo": "https://citygirlwardrobe-bw-3.vercel.app/assets/img/logo.png", "image": "https://citygirlwardrobe-bw-3.vercel.app/assets/img/og-image.jpg", "description": "Statement gowns, dresses and sets for the girl who runs the city. Based in Lagos, shipping worldwide.", "address": {"@type": "PostalAddress", "addressLocality": "Lagos", "addressCountry": "NG"}, "currenciesAccepted": "NGN"}, {"@type": "WebSite", "@id": "https://citygirlwardrobe-bw-3.vercel.app/#website", "name": "CityGirl Wardrobe", "url": "https://citygirlwardrobe-bw-3.vercel.app/", "publisher": {"@id": "https://citygirlwardrobe-bw-3.vercel.app/#store"}}]}</script>
 <noscript><style>[data-reveal]{opacity:1!important;transform:none!important;}.hero-actions{opacity:1!important;transform:none!important;}.hero-full .hero-bg{opacity:1!important;}</style></noscript>
 </head>
@@ -53,6 +53,9 @@
       </div>
     </div>
   </section>
+
+  <!-- RECENT ORDER (only shown to someone who has ordered on this device) -->
+  <section class="home-section recent-order" id="recent-order" hidden aria-label="Your recent order"></section>
 
   <!-- COLLECTIONS -->
   <section class="home-section" aria-label="Collections">
@@ -127,9 +130,9 @@
 </button>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/js/supabase-config.js"></script>
-<script src="assets/js/store-data.js"></script>
-<script src="assets/js/render.js"></script>
+<script src="assets/js/supabase-config.js?v=20261002c"></script>
+<script src="assets/js/store-data.js?v=20261002c"></script>
+<script src="assets/js/render.js?v=20261002c"></script>
 <script>
   CGWRender.init('index.html');
   var content = CGWRender.content;
@@ -164,6 +167,27 @@
   var cta2 = document.getElementById('hero-cta2');
   if (content.hero.buttonText2) { cta2.textContent = content.hero.buttonText2; cta2.href = content.hero.buttonLink2 || 'shop.html?filter=bestsellers'; }
   else cta2.hidden = true;
+
+  // ---- "Your recent order" card: latest order from the last 60 days ----
+  (function buildRecentOrder() {
+    var o = window.CGW.getOrders()[0];
+    if (!o || !o.createdAt || Date.now() - new Date(o.createdAt).getTime() > 60 * 864e5) return;
+    var el = document.getElementById('recent-order');
+    var items = o.items || [];
+    var first = items[0] || {};
+    function render(status) {
+      var info = CGWRender.orderStatusInfo(status);
+      el.innerHTML = '<a class="recent-order-card container" href="orders.html">' +
+        '<img src="' + esc(first.image || '') + '" alt="" onerror="this.onerror=null;this.src=\'assets/img/product-fallback.jpg\'">' +
+        '<span class="ro-text"><span class="ro-kicker">Your recent order</span>' +
+        '<span class="ro-title">' + esc(first.name || 'Your order') + (items.length > 1 ? ' + ' + (items.length - 1) + ' more' : '') + '</span>' +
+        '<span class="ro-meta"><span class="order-status-badge" data-status="' + esc(status) + '">' + esc(info.label) + '</span><span class="ro-ref">' + esc(o.ref) + '</span></span></span>' +
+        '<span class="ro-link" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></a>';
+    }
+    render(o.paymentStatus === 'paid' ? 'paid' : 'pending');
+    el.hidden = false;
+    CGWRender.fetchOrderStatus(o).then(render);
+  })();
 
   // ---- Product-dependent sections (built once, after trying live data) ----
   function newIn() {

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Orders | CityGirl Wardrobe</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/img/logo.png">
+<link rel="apple-touch-icon" href="assets/img/logo-192.png">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;900&family=Montserrat:wght@400;500;600;800&family=Space+Mono&display=swap">
+<link rel="stylesheet" href="assets/css/style.css?v=20261002c">
+<noscript><style>[data-reveal]{opacity:1!important;transform:none!important;}</style></noscript>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div id="announcement-bar" class="announcement-bar"></div>
+<header class="site-header" id="site-header"></header>
+
+<main id="main">
+  <section class="page-hero">
+    <div class="container">
+      <div class="breadcrumb"><a href="index.html">Home</a> / My Orders</div>
+      <h1>My Orders</h1>
+      <p>Orders you've placed on this phone or computer, with their latest status.</p>
+    </div>
+  </section>
+
+  <section style="padding-top:32px;">
+    <div class="container">
+      <div id="orders-list" class="orders-list"></div>
+
+      <div id="orders-empty" class="orders-empty" hidden>
+        <p class="lead">No orders on this device yet.</p>
+        <a href="shop.html" class="btn btn-primary">Start shopping</a>
+      </div>
+
+      <div class="order-lookup">
+        <h2>Find an order</h2>
+        <p class="text-muted">Ordered on another phone? Enter your order number and the email you used at checkout.</p>
+        <form id="lookup-form" novalidate>
+          <div class="form-row">
+            <div class="field"><label for="lk-ref">Order number</label><input type="text" id="lk-ref" placeholder="CGW-XXXXXXXX" autocomplete="off" maxlength="20" required><span class="field-error">Enter your order number, e.g. CGW-AB12CD34.</span></div>
+            <div class="field"><label for="lk-email">Email address</label><input type="email" id="lk-email" autocomplete="email" maxlength="160" required><span class="field-error">Enter the email you used at checkout.</span></div>
+          </div>
+          <button type="submit" class="btn btn-primary">Check status</button>
+        </form>
+        <p id="lookup-result" class="lookup-result" role="status" hidden></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<div id="newsletter-modal-root"></div>
+<div id="bag-drawer-root"></div>
+<div id="quickview-modal-root"></div>
+
+<button class="back-to-top" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-config.js?v=20261002c"></script>
+<script src="assets/js/store-data.js?v=20261002c"></script>
+<script src="assets/js/render.js?v=20261002c"></script>
+<script>
+  CGWRender.init('orders.html');
+  var content = CGWRender.content;
+  var esc = CGWRender.escapeHtml;
+  var fmt = window.CGW.formatPrice;
+
+  function waOrderLink(ref) {
+    return 'https://wa.me/' + encodeURIComponent(content.meta.whatsapp) + '?text=' + encodeURIComponent('Hi CityGirl Wardrobe! I have a question about my order ' + ref + '.');
+  }
+  function statusHtml(status) {
+    var info = CGWRender.orderStatusInfo(status);
+    return '<span class="order-status-badge" data-status="' + esc(status) + '">' + esc(info.label) + '</span><p class="order-status-note">' + esc(info.note) + '</p>';
+  }
+
+  var orders = window.CGW.getOrders();
+  var list = document.getElementById('orders-list');
+  if (!orders.length) document.getElementById('orders-empty').hidden = false;
+
+  list.innerHTML = orders.map(function (o, i) {
+    var c = o.customer || {};
+    var date = o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    return '<article class="order-card" data-reveal>' +
+      '<header class="order-card-head">' +
+        '<div><span class="order-ref">' + esc(o.ref) + '</span><span class="order-date">' + esc(date) + '</span></div>' +
+        '<div class="order-status" id="order-status-' + i + '">' + statusHtml(o.paymentStatus === 'paid' ? 'paid' : 'pending') + '</div>' +
+      '</header>' +
+      '<ul class="order-items">' + (o.items || []).map(function (it) {
+        return '<li><img src="' + esc(it.image) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'assets/img/product-fallback.jpg\'">' +
+          '<span class="oi-name">' + esc(it.name) + '<small>' + (it.size && it.size !== 'One Size' ? 'Size ' + esc(it.size) + ' · ' : '') + 'Qty ' + (it.qty || 1) + '</small></span>' +
+          '<span class="oi-price">' + fmt((it.price || 0) * (it.qty || 1)) + '</span></li>';
+      }).join('') + '</ul>' +
+      '<dl class="order-meta">' +
+        '<div><dt>Total</dt><dd>' + fmt(o.total) + '</dd></div>' +
+        '<div><dt>Delivery</dt><dd>' + esc(o.deliveryLabel || c.delivery || '') + '</dd></div>' +
+        '<div><dt>Payment</dt><dd>' + esc(c.payment || (o.paymentStatus === 'paid' ? 'Paid online' : 'Pay on delivery')) + '</dd></div>' +
+        '<div><dt>Delivering to</dt><dd>' + esc([c.name, c.address, c.city, c.state, c.country].filter(Boolean).join(', ')) + '</dd></div>' +
+      '</dl>' +
+      '<a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="' + esc(waOrderLink(o.ref)) + '">Ask about this order</a>' +
+    '</article>';
+  }).join('');
+  CGWRender.wireReveal();
+
+  // Fetch the latest status for each order from the shop.
+  orders.forEach(function (o, i) {
+    CGWRender.fetchOrderStatus(o).then(function (status) {
+      var el = document.getElementById('order-status-' + i);
+      if (el) el.innerHTML = statusHtml(status);
+    });
+  });
+
+  // Look up an order placed elsewhere.
+  var form = document.getElementById('lookup-form');
+  form.addEventListener('input', function (e) { var f = e.target.closest('.field'); if (f) f.classList.remove('has-error'); });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var refEl = document.getElementById('lk-ref'), emailEl = document.getElementById('lk-email');
+    var ref = refEl.value.trim().toUpperCase(), email = emailEl.value.trim();
+    var ok = true;
+    if (!/^CGW-[A-Z0-9]{6,8}$/.test(ref)) { refEl.closest('.field').classList.add('has-error'); ok = false; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) { emailEl.closest('.field').classList.add('has-error'); ok = false; }
+    if (!ok) return;
+    var out = document.getElementById('lookup-result');
+    out.hidden = false; out.textContent = 'Checking…';
+    if (!(window.CGWDB && window.CGWDB.orderStatus)) { out.textContent = "We couldn't check right now — please message us on WhatsApp with your order number."; return; }
+    window.CGWDB.orderStatus(ref, email).then(function (status) {
+      if (!status) { out.innerHTML = "We couldn't find order <b>" + esc(ref) + "</b> with that email. Check both, or <a href=\"" + esc(waOrderLink(ref)) + "\" target=\"_blank\" rel=\"noopener\">ask us on WhatsApp</a>."; return; }
+      var info = CGWRender.orderStatusInfo(status);
+      out.innerHTML = '<b>' + esc(ref) + ':</b> ' + esc(info.label) + ' — ' + esc(info.note);
+    });
+  });
+</script>
+</body>
+</html>

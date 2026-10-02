@@ -299,11 +299,14 @@
   function getOrders() {
     try { return JSON.parse(localStorage.getItem(ORDERS_KEY)) || []; } catch (e) { return []; }
   }
-  function saveOrder(order) {
-    // Keep a local copy (the customer's own order history in this browser).
-    var orders = getOrders();
+  // The customer's own order history in this browser ("My Orders"). Only
+  // called once an order is really placed, so it never lists a failed one.
+  function rememberOrder(order) {
+    var orders = getOrders().filter(function (o) { return o.ref !== order.ref; });
     orders.unshift(order);
     try { localStorage.setItem(ORDERS_KEY, JSON.stringify(orders.slice(0, 50))); } catch (e) {}
+  }
+  function saveOrder(order) {
     // Save to the database. Returns a promise that rejects if the order could
     // not be stored, so checkout can tell the customer instead of failing silently.
     if (!(window.CGWDB && window.CGWDB.createOrder)) return Promise.reject(new Error('Store database is not connected'));
@@ -343,6 +346,7 @@
     clearBag: clearBag,
     getOrders: getOrders,
     saveOrder: saveOrder,
+    rememberOrder: rememberOrder,
     generateOrderRef: generateOrderRef
   };
 })(window);
