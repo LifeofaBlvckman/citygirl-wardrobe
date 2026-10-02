@@ -97,7 +97,7 @@
   function setHeading(view) {
     var h = document.getElementById('shop-title');
     var crumb = document.getElementById('shop-crumb');
-    if (h) h.textContent = view.key === 'All' ? 'Shop All' : view.label;
+    if (h) { h.textContent = view.key === 'All' ? 'Shop All' : view.label; CGWRender.animateLetters(h); }
     if (crumb) crumb.textContent = view.key === 'All' ? 'Shop' : view.label;
   }
 

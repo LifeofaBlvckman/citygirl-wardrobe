@@ -559,6 +559,38 @@
     btn.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); });
   }
 
+  // ---------- Headings: letters arrive one by one ----------
+  // Splits each heading into per-letter spans (screen readers get the plain
+  // text via aria-label) and plays the animation when it scrolls into view.
+  var LETTER_HEADINGS = '.hero-title, .section-title, .section-head h2, .page-hero h1';
+  function animateLetters(el) {
+    if (!el || el.children.length) return; // only plain-text headings (call again after changing the text)
+    var text = el.textContent.trim();
+    if (!text) return;
+    var i = 0;
+    el.setAttribute('aria-label', text);
+    el.innerHTML = text.split(/\s+/).map(function (word) {
+      return '<span class="word" aria-hidden="true">' + Array.from(word).map(function (ch) {
+        return '<span class="ltr" style="--i:' + (i++) + '">' + escapeHtml(ch) + '</span>';
+      }).join('') + '</span>';
+    }).join(' ');
+    el.classList.remove('is-in');
+    el.classList.add('letters');
+    if (reduceMotion || !('IntersectionObserver' in window)) { el.classList.add('is-in'); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { el.classList.add('is-in'); io.disconnect(); }
+      });
+    }, { threshold: 0.3 });
+    io.observe(el);
+  }
+  function wireLetters() {
+    // Run after the page's own scripts have filled in the heading text.
+    var run = function () { document.querySelectorAll(LETTER_HEADINGS).forEach(animateLetters); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+    else run();
+  }
+
   window.CGWRender = {
     content: content,
     escapeHtml: escapeHtml,
@@ -577,6 +609,7 @@
     renderQuickView: renderQuickView,
     updateBagCount: updateBagCount,
     wireReveal: wireReveal,
+    animateLetters: animateLetters,
     init: function (activePage) {
       renderAnnouncement();
       renderHeader(activePage);
@@ -590,6 +623,7 @@
       wireAddToBag();
       wireNav();
       wireBackToTop();
+      wireLetters();
       updateBagCount();
     }
   };

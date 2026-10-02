@@ -119,6 +119,8 @@ The whole site now has a cleaner, simpler shop feel:
 - **Product cards:** a rounded photo with a round **bag button**, which opens the quick view so the customer picks a size, then the name and price underneath. Tags like *Sale* or *Sold Out* show as a badge on the photo. *New* and *Bestseller* don't show, because the row already says that.
 - **Discount pill:** a pink pill at the bottom of every page except checkout, on phones and desktop (e.g. *10% Off*, taken from the newsletter's discount text in Admin). Tapping it opens the newsletter popup. Tapping **×** or signing up hides it until the browser tab is closed. The popup **no longer opens by itself on a timer**, so Admin's popup delay setting is no longer used.
 - **WhatsApp:** now a slim **Chat** tab on the right edge of the screen.
+- **Frosted header:** once you scroll, the header turns into see-through frosted glass (the page blurs behind it) on every page.
+- **Letter-by-letter headings:** the hero headline and section/page headings type in one letter at a time when they come on screen (skipped for visitors who turn off animations).
 - **Footer:** unchanged — still the black footer with the logo, on every page.
 - **Type:** Helvetica/Arial for headings and text, Montserrat for buttons, Space Mono for the shipping strip.
 - **Removed from the homepage:** the "Why CityGirl" cards, the category chips, the auto-sliding carousel, the bottom newsletter strip and the back-to-top button. The pink pill now covers the newsletter signup.

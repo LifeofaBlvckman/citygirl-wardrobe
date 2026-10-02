@@ -300,8 +300,8 @@ body.has-promo .hero-full-inner { padding-bottom: calc(clamp(48px, 9vh, 96px) + 
   text-transform: uppercase; text-shadow: 0 1px 24px rgba(0,0,0,0.18);
 }
 .hero-actions { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; opacity: 0; transform: translateY(10px); transition: opacity 700ms ease 300ms, transform 700ms var(--ease-out) 300ms; }
-.hero-title { opacity: 0; transform: translateY(10px); transition: opacity 700ms ease 150ms, transform 700ms var(--ease-out) 150ms; }
-.is-loaded .hero-title, .is-loaded .hero-actions { opacity: 1; transform: none; }
+.is-loaded .hero-actions { opacity: 1; transform: none; }
+.hero-title.letters { --letter-step: 45ms; --letter-delay: 200ms; }
 .hero-actions .btn { width: min(310px, 74%); padding-block: 19px; font-size: 0.95rem; }
 .btn-light { background: #fff; color: #0b0b0b; border-color: #fff; }
 .btn-light:hover { background: #f1f1f1; }
@@ -315,7 +315,17 @@ body.home .site-header .btn-icon { color: #fff; }
 body.home .site-header .bag-count { background: #fff; color: #0b0b0b; }
 body.home .site-header .logo-badge { filter: invert(1); } /* black mark -> white on the photo */
 /* Once scrolled, the header turns solid white again */
-body.home .site-header.is-scrolled { background: #fff; border-bottom-color: var(--brand-border); }
+/* Scrolled (every page): frosted glass — see-through white with the page blurred behind it */
+.site-header.is-scrolled,
+body.home .site-header.is-scrolled {
+  background: rgba(255,255,255,0.6);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  backdrop-filter: saturate(180%) blur(18px);
+  border-bottom-color: rgba(11,11,11,0.08);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header.is-scrolled, body.home .site-header.is-scrolled { background: rgba(255,255,255,0.96); }
+}
 body.home .site-header.is-scrolled .brand-name,
 body.home .site-header.is-scrolled .btn-icon { color: var(--color-text); }
 body.home .site-header.is-scrolled .bag-count { background: #0b0b0b; color: #fff; }
@@ -584,6 +594,16 @@ section { padding-block: clamp(56px, 8vw, 96px); }
 .footer-bottom a { color: #cfcfcf; text-decoration: underline; text-underline-offset: 2px; }
 /* Leave room so the floating discount pill never covers the footer */
 body.has-promo .site-footer { padding-bottom: 110px; }
+
+/* ---------- Letters arriving one by one (headings) ---------- */
+/* render.js wraps each letter in .ltr (inside .word so lines only break between words). */
+.letters .word { display: inline-block; white-space: nowrap; }
+.letters .ltr {
+  display: inline-block; opacity: 0; transform: translateY(0.4em); filter: blur(6px);
+  transition: opacity 450ms ease, transform 650ms var(--ease-out), filter 450ms ease;
+  transition-delay: calc(var(--letter-delay, 0ms) + var(--i) * var(--letter-step, 32ms));
+}
+.letters.is-in .ltr { opacity: 1; transform: none; filter: none; }
 
 /* ---------- Reveal on scroll ---------- */
 [data-reveal] { opacity: 0; transform: translateY(22px); transition: opacity 720ms var(--ease-out), transform 720ms var(--ease-out); transition-delay: var(--reveal-delay, 0ms); }
